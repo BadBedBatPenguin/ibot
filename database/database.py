@@ -1,5 +1,7 @@
 from pymongo import MongoClient
 
+from database.models import Item
+
 
 class DataBase:
     """
@@ -18,11 +20,16 @@ class DataBase:
         self._cluster = MongoClient(connection_string)
         self._db = self._cluster[db_name]
 
-        self._users_collection = self._db["users"]
-
         self._db_name = db_name
 
         print("db inited successfully")
+
+
+class Users(DataBase):
+    def __init__(self, connection_string, db_name):
+        super().__init__(connection_string, db_name)
+
+        self._collection = self._db["users"]
 
     def register_user(self, message):
         """
@@ -37,11 +44,8 @@ class DataBase:
         """
         try:
             # if user is not registered
-            if (
-                self._users_collection.count_documents({"_id": message.from_user.id})
-                == 0
-            ):
-                self._users_collection.insert_one(
+            if self._collection.count_documents({"_id": message.from_user.id}) == 0:
+                self._collection.insert_one(
                     {
                         "_id": message.from_user.id,
                         "username": message.chat.username,
@@ -79,11 +83,8 @@ class DataBase:
         """
         try:
             # add user if user is not in collection
-            if (
-                self._users_collection.count_documents({"_id": message.from_user.id})
-                == 0
-            ):
-                self._users_collection.insert_one(
+            if self._collection.count_documents({"_id": message.from_user.id}) == 0:
+                self._collection.insert_one(
                     {
                         "_id": message.from_user.id,
                         "username": message.chat.username,
@@ -94,7 +95,7 @@ class DataBase:
                 )
             # update user status if user is in collection
             else:
-                self._users_collection.update_one(
+                self._collection.update_one(
                     {"_id": message.from_user.id},
                     {
                         "$set": {"isSubscribed": True},
@@ -124,11 +125,8 @@ class DataBase:
         """
         try:
             # add user if user is not in collection
-            if (
-                self._users_collection.count_documents({"_id": message.from_user.id})
-                == 0
-            ):
-                self._users_collection.insert_one(
+            if self._collection.count_documents({"_id": message.from_user.id}) == 0:
+                self._collection.insert_one(
                     {
                         "_id": message.from_user.id,
                         "username": message.chat.username,
@@ -139,7 +137,7 @@ class DataBase:
                 )
             # update user status if user is in collection
             else:
-                self._users_collection.update_one(
+                self._collection.update_one(
                     {"_id": message.from_user.id},
                     {
                         "$set": {"isSubscribed": False},
@@ -160,7 +158,7 @@ class DataBase:
         return True/False values;
         """
         try:
-            return self._users_collection.find_one({"_id": user_id})["isSubscribed"]
+            return self._collection.find_one({"_id": user_id})["isSubscribed"]
 
         except Exception as error:
             print(error)
@@ -171,7 +169,7 @@ class DataBase:
         list(dict(), dict(), dict(),...)
         """
         try:
-            return list(self._users_collection.find())
+            return list(self._collection.find())
 
         except Exception as error:
             print(error)
@@ -194,7 +192,7 @@ class DataBase:
         lust(int, int, int,...)
         """
         try:
-            users = list(self._users_collection.find())
+            users = list(self._collection.find())
             return [user["_id"] for user in users]
 
         except Exception as error:
@@ -233,3 +231,138 @@ class DataBase:
 
         except Exception as error:
             print(error)
+
+
+class Items(DataBase):
+    def __init__(self, connection_string, db_name):
+        super().__init__(connection_string, db_name)
+
+        self._collection = self._db["items"]
+
+    def save_item(self, item: Item) -> bool:
+        """
+        save item in the colelction[items] in the format:
+         {
+             '_id': item.id,
+             'name': item.name,
+             'description': item.description,
+             'category': item.category,
+             'subcategory': item.subcategory,
+             'model': item.model,
+             'price': item.price,
+         }
+        """
+        try:
+            # if item has not been saved before
+            if self._collection.count_documents({"_id": item._id}) == 0:
+                self._collection.insert_one(item.dict())
+            # if item already exists
+            else:
+                print(
+                    f"Item with id: {item._id} already exists in the collection[items]."
+                )
+
+            # return True if operation is done
+            return True
+
+        except Exception as error:
+            # return False if operation is not done
+            print(error)
+            return False
+
+    def edit_item(self, id: str, data: dict) -> bool:
+        """
+        edit item in the collection[items]
+        if item is not in the collection, add item
+        """
+        try:
+            # add item if item is not in collection
+            if self._collection.count_documents({"_id": id}) == 0:
+                item = Item(**data, _id=id)
+                self._collection.insert_one(item.dict())
+            # update item if item is in collection
+            else:
+                data.pop("_id")
+                self._collection.update_one(
+                    {"_id": id},
+                    {
+                        "$set": data,
+                    },
+                )
+
+            # return True if operation is done
+            return True
+
+        except Exception as error:
+            # return False if operation is not done
+            print(error)
+            return False
+
+    def get_all_items_data(self) -> list[dict] | None:
+        """
+        return items list with all data from collection[items]
+        """
+        try:
+            return list(self._collection.find())
+
+        except Exception as error:
+            print(error)
+
+    def get_all_items_obj(self) -> list[dict] | None:
+        """
+        return items list with all data from collection[items]
+        """
+        try:
+            return [Item(**item) for item in self._collection.find()]
+
+        except Exception as error:
+            print(error)
+
+    def get_item_by_id(self, id: str) -> dict | None:
+        """
+        return item by id
+        """
+        try:
+            return self._collection.find_one({"_id": id})
+
+        except Exception as error:
+            print(error)
+
+    def get_item_obj_by_id(self, id: str) -> Item | None:
+        """
+        return item object by id
+        """
+        try:
+            return Item(**self._collection.find_one({"_id": id}))
+
+        except Exception as error:
+            print(error)
+
+    def get_items_obj_by_category_model_subcategory(
+        self, category: str, model: str, subcategory: str
+    ) -> list[Item] | None:
+        """
+        return items list by category, model, subcategory
+        """
+        try:
+            return [
+                Item(**item)
+                for item in self._collection.find(
+                    {"category": category, "model": model, "subcategory": subcategory}
+                )
+            ]
+
+        except Exception as error:
+            print(error)
+
+    def delete_item(self, id: str) -> bool:
+        """
+        delete item by id
+        """
+        try:
+            self._collection.delete_one({"_id": id})
+            return True
+
+        except Exception as error:
+            print(error)
+            return False
