@@ -27,5 +27,7 @@ class AdminSettings:
             for subcategory in self.subcategories[category]
         ]
 
+    superusers = [629909066]
+
 
 admin_settings = AdminSettings()

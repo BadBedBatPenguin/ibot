@@ -77,6 +77,7 @@ def test4(message):
     bot.send_message(message.from_user.id, str(users_table.get_subscription_stats()))
 
 
+# admin panel
 @bot.message_handler(commands=["admin"])
 def admin_panel(message: telebot.types.Message) -> None:
     markup = telebot.types.InlineKeyboardMarkup()
@@ -310,6 +311,46 @@ def update_item_price(message: telebot.types.Message, item: Item):
     items_table.edit_item(item._id, item.dict())
     bot.send_message(
         message.from_user.id, f"Спасибо, сохранёны изменения:\n{item.dict()}"
+    )
+
+
+@bot.message_handler(commands=["make_admin"])
+def make_admin(message: telebot.types.Message) -> None:
+    if message.from_user.id not in settings.admin_settings.superusers:
+        bot.send_message(message.chat.id, "У вас нет прав на это действие")
+        return
+
+    users_table.make_user_admin(message.text.split()[1])
+
+    bot.send_message(
+        message.chat.id,
+        f"Пользователь {message.text.split()[1]} назначен администратором",
+    )
+
+
+@bot.message_handler(commands=["unmake_admin"])
+def unmake_admin(message: telebot.types.Message) -> None:
+    if message.from_user.id not in settings.admin_settings.superusers:
+        bot.send_message(message.chat.id, "У вас нет прав на это действие")
+        return
+
+    users_table.unmake_user_admin(message.text.split()[1])
+
+    bot.send_message(
+        message.chat.id,
+        f"Пользователь {message.text.split()[1]} больше не администратор",
+    )
+
+
+@bot.message_handler(commands=["get_all_admins"])
+def get_all_admins_usernames(message: telebot.types.Message) -> None:
+    if message.from_user.id not in settings.admin_settings.superusers:
+        bot.send_message(message.chat.id, "У вас нет прав на это действие")
+        return
+
+    bot.send_message(
+        message.chat.id,
+        ", ".join(users_table.get_admins_usernames()),
     )
 
 

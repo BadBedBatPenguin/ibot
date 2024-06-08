@@ -68,37 +68,24 @@ class Users(DataBase):
             print(error)
             return False
 
-    def subscribe_user(self, message):
+    def make_user_admin(self, username: str) -> bool | str:
         """
-        subscribe user in the collection[users]
-        if user is not in the collection, add user in the format:
-        {
-            '_id': message.from_user.id,
-            'username': message.chat.username,
-            'first_name': message.from_user.first_name,
-            'last_name': message.from_user.last_name,
-            'isSubscribed': True,
-        }
-        if user is alreary in the collection, change user field "isSubscribed" = True
+        make user admmin
+        if user is not in the collection, return error message
+        if user is alreary in the collection, change user field "is_admin" = True
         """
+        if username.startswith("@"):
+            username = username[1:]
         try:
-            # add user if user is not in collection
-            if self._collection.count_documents({"_id": message.from_user.id}) == 0:
-                self._collection.insert_one(
-                    {
-                        "_id": message.from_user.id,
-                        "username": message.chat.username,
-                        "first_name": message.from_user.first_name,
-                        "last_name": message.from_user.last_name,
-                        "isSubscribed": True,
-                    }
-                )
+            # return error if user is not in collection
+            if self._collection.count_documents({"username": username}) == 0:
+                return f"User with username: {username} is not in the database."
             # update user status if user is in collection
             else:
                 self._collection.update_one(
-                    {"_id": message.from_user.id},
+                    {"username": username},
                     {
-                        "$set": {"isSubscribed": True},
+                        "$set": {"is_admin": True},
                     },
                 )
 
@@ -110,37 +97,24 @@ class Users(DataBase):
             print(error)
             return False
 
-    def unsubscribe_user(self, message):
+    def unmake_user_admin(self, username: str) -> bool | str:
         """
-        unsubscribe user from the collection[users]
-        if user is not in the collection, add user in the format:
-        {
-            '_id': message.from_user.id,
-            'username': message.chat.username,
-            'first_name': message.from_user.first_name,
-            'last_name': message.from_user.last_name,
-            'isSubscribed': False,
-        }
-        if user is alreary in the collection, change user field "isSubscribed" = False
+        unmake user admmin
+        if user is not in the collection, return error message
+        if user is alreary in the collection, change user field "is_admin" = False
         """
+        if username.startswith("@"):
+            username = username[1:]
         try:
-            # add user if user is not in collection
-            if self._collection.count_documents({"_id": message.from_user.id}) == 0:
-                self._collection.insert_one(
-                    {
-                        "_id": message.from_user.id,
-                        "username": message.chat.username,
-                        "first_name": message.from_user.first_name,
-                        "last_name": message.from_user.last_name,
-                        "isSubscribed": False,
-                    }
-                )
+            # return error if user is not in collection
+            if self._collection.count_documents({"username": username}) == 0:
+                return f"User with username: {username} is not in the database."
             # update user status if user is in collection
             else:
                 self._collection.update_one(
-                    {"_id": message.from_user.id},
+                    {"username": username},
                     {
-                        "$set": {"isSubscribed": False},
+                        "$set": {"is_admin": False},
                     },
                 )
 
@@ -174,14 +148,14 @@ class Users(DataBase):
         except Exception as error:
             print(error)
 
-    def get_subscribed_users_data(self):
+    def get_admins_usernames(self):
         """
-        return users list with all data from collection[users] for subscriber users [isSubscribed == True]
-        list(dict(), dict(), dict(),...)
+        return users list with usernames from collection[users] for admins [is_admin == True]
+        list[str]
         """
         try:
-            users = self.get_all_users_data()
-            return [user for user in users if user["isSubscribed"]]
+            users = self._collection.find({"is_admin": True})
+            return [f"@{user['username']}" for user in users]
 
         except Exception as error:
             print(error)
