@@ -160,48 +160,13 @@ class Users(DataBase):
         except Exception as error:
             print(error)
 
-    def get_all_users_identificators(self):
+    def check_admin_status_for_user(self, user_id):
         """
-        return list with only users identificators from collection[users]
-        lust(int, int, int,...)
-        """
-        try:
-            users = list(self._collection.find())
-            return [user["_id"] for user in users]
-
-        except Exception as error:
-            print(error)
-
-    def get_subscribed_users_identificators(self):
-        """
-        return list with only users identificators from collection[users] for subscriber users [isSubscribed == True]
-        lust(int, int, int,...)
+        Check user admin status;
+        return True/False values;
         """
         try:
-            users = self.get_all_users_data()
-            return [user["_id"] for user in users if user["isSubscribed"]]
-
-        except Exception as error:
-            print(error)
-
-    def get_subscription_stats(self):
-        """
-        return {
-            'percentage': [float] value from 0 to 1 which means percentage of subscription by users
-            'subscribed': [int] amount of subscribed users,
-            'total': [int] total amount of interacted users,
-        }
-        """
-        try:
-            users = self.get_all_users_data()
-            subscribed = len([user for user in users if user["isSubscribed"]])
-            total = len(users)
-
-            return {
-                "percentage": subscribed / total,
-                "subscribed": subscribed,
-                "total": total,
-            }
+            return self._collection.find_one({"_id": user_id})["is_admin"]
 
         except Exception as error:
             print(error)

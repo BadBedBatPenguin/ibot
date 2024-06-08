@@ -22,6 +22,32 @@ items_table = Items(
 )
 
 
+def admin(func):
+    def wrapper(*args, **kwargs):
+        if args:
+            payload = args[0]
+            if payload and (
+                payload.from_user.id in settings.admin_settings.superusers
+                or users_table.check_admin_status_for_user(payload.from_user.id)
+            ):
+                return func(*args, **kwargs)
+            elif payload:
+                chat_id = (
+                    payload.chat.id
+                    if isinstance(payload, telebot.types.Message)
+                    else payload.message.chat.id
+                )
+                bot.send_message(
+                    chat_id,
+                    "У вас нет прав на это действие",
+                )
+                return
+        else:
+            return func(*args, **kwargs)
+
+    return wrapper
+
+
 @bot.message_handler(commands=["start"])
 def send_start_message(message):
     users_table.register_user(message)
@@ -79,7 +105,12 @@ def test4(message):
 
 # admin panel
 @bot.message_handler(commands=["admin"])
+@admin
 def admin_panel(message: telebot.types.Message) -> None:
+    _admin_panel(message)
+
+
+def _admin_panel(message: telebot.types.Message) -> None:
     markup = telebot.types.InlineKeyboardMarkup()
     button = telebot.types.InlineKeyboardButton(
         "Управление товарами", callback_data="items_management"
@@ -90,6 +121,7 @@ def admin_panel(message: telebot.types.Message) -> None:
 
 
 @bot.callback_query_handler(func=lambda call: call.data == "items_management")
+@admin
 def items_management(call: telebot.types.CallbackQuery) -> None:
     markup = telebot.types.InlineKeyboardMarkup()
     buttons = (
@@ -104,12 +136,14 @@ def items_management(call: telebot.types.CallbackQuery) -> None:
 
 
 @bot.callback_query_handler(func=lambda call: call.data == "/admin")
+@admin
 def back_to_admin_panel(call: telebot.types.CallbackQuery) -> None:
     bot.delete_message(call.message.chat.id, call.message.message_id)
-    admin_panel(call.message)
+    _admin_panel(call.message)
 
 
 @bot.callback_query_handler(func=lambda call: call.data == "iphones")
+@admin
 def iphones(call: telebot.types.CallbackQuery) -> None:
     markup = telebot.types.InlineKeyboardMarkup()
     buttons = (
@@ -128,6 +162,7 @@ def iphones(call: telebot.types.CallbackQuery) -> None:
 @bot.callback_query_handler(
     func=lambda call: call.data in settings.admin_settings.iphone_models
 )
+@admin
 def iphone(call: telebot.types.CallbackQuery) -> None:
     markup = telebot.types.InlineKeyboardMarkup()
     buttons = (
@@ -151,6 +186,7 @@ def iphone(call: telebot.types.CallbackQuery) -> None:
 @bot.callback_query_handler(
     func=lambda call: call.data in ["ipads", "macbooks", "apple_watch", "accessories"]
 )
+@admin
 def choose_category(call: telebot.types.CallbackQuery) -> None:
     markup = telebot.types.InlineKeyboardMarkup()
     buttons = (
@@ -169,6 +205,7 @@ def choose_category(call: telebot.types.CallbackQuery) -> None:
 @bot.callback_query_handler(
     func=lambda call: call.data in settings.admin_settings.all_subcategories
 )
+@admin
 def update_items(call: telebot.types.CallbackQuery) -> None:
     markup = telebot.types.InlineKeyboardMarkup()
     category = call.data.split(":")[0]
@@ -193,6 +230,7 @@ def update_items(call: telebot.types.CallbackQuery) -> None:
 
 
 @bot.callback_query_handler(func=lambda call: call.data.split("_")[0] == "add")
+@admin
 def add_item(call: telebot.types.CallbackQuery) -> None:
     print(f"creating item for {call.data}")
     category, model, subcategory = call.data.split("_")[1:]
@@ -202,6 +240,7 @@ def add_item(call: telebot.types.CallbackQuery) -> None:
     bot.register_next_step_handler(msg, save_item_name, item=item)
 
 
+@admin
 def save_item_name(message: telebot.types.Message, item: Item):
     item.name = message.text
     print(item.dict())
@@ -209,6 +248,7 @@ def save_item_name(message: telebot.types.Message, item: Item):
     bot.register_next_step_handler(msg, save_item_description, item=item)
 
 
+@admin
 def save_item_description(message: telebot.types.Message, item: Item):
     item.description = message.text
     print(item.dict())
@@ -216,6 +256,7 @@ def save_item_description(message: telebot.types.Message, item: Item):
     bot.register_next_step_handler(msg, save_item_price, item=item)
 
 
+@admin
 def save_item_price(message: telebot.types.Message, item: Item):
     item.price = Decimal(message.text.strip().replace(",", "."))
     print(item.dict())
@@ -223,6 +264,7 @@ def save_item_price(message: telebot.types.Message, item: Item):
     bot.send_message(message.from_user.id, f"Спасибо, сохранён товар:\n{item.dict()}")
 
 
+@admin
 @bot.callback_query_handler(func=lambda call: call.data.split("_")[0] == "deleteitems")
 def delete_items(call: telebot.types.CallbackQuery) -> None:
     category, model, subcategory = call.data.split("_")[1:]
@@ -244,6 +286,7 @@ def delete_items(call: telebot.types.CallbackQuery) -> None:
 
 
 @bot.callback_query_handler(func=lambda call: call.data.split("_")[0] == "deleteitem")
+@admin
 def delete_item(call: telebot.types.CallbackQuery) -> None:
     item_id = call.data.split("_")[1]
     items_table.delete_item(item_id)
@@ -253,6 +296,7 @@ def delete_item(call: telebot.types.CallbackQuery) -> None:
 
 
 @bot.callback_query_handler(func=lambda call: call.data.split("_")[0] == "updateitems")
+@admin
 def uppdate_items(call: telebot.types.CallbackQuery) -> None:
     category, model, subcategory = call.data.split("_")[1:]
     items = items_table.get_items_obj_by_category_model_subcategory(
@@ -273,6 +317,7 @@ def uppdate_items(call: telebot.types.CallbackQuery) -> None:
 
 
 @bot.callback_query_handler(func=lambda call: call.data.split("_")[0] == "updateitem")
+@admin
 def update_item(call: telebot.types.CallbackQuery) -> None:
     item_id = call.data.split("_")[1]
     item = items_table.get_item_obj_by_id(item_id)
@@ -284,6 +329,7 @@ def update_item(call: telebot.types.CallbackQuery) -> None:
     bot.register_next_step_handler(msg, update_item_name, item=item)
 
 
+@admin
 def update_item_name(message: telebot.types.Message, item: Item):
     item.name = message.text if message.text != "skip" else item.name
     msg = bot.reply_to(
@@ -293,6 +339,7 @@ def update_item_name(message: telebot.types.Message, item: Item):
     bot.register_next_step_handler(msg, update_item_description, item=item)
 
 
+@admin
 def update_item_description(message: telebot.types.Message, item: Item):
     item.description = message.text if message.text != "skip" else item.description
     msg = bot.reply_to(
@@ -302,6 +349,7 @@ def update_item_description(message: telebot.types.Message, item: Item):
     bot.register_next_step_handler(msg, update_item_price, item=item)
 
 
+@admin
 def update_item_price(message: telebot.types.Message, item: Item):
     item.price = (
         Decimal(message.text.strip().replace(",", "."))
@@ -315,6 +363,7 @@ def update_item_price(message: telebot.types.Message, item: Item):
 
 
 @bot.message_handler(commands=["make_admin"])
+@admin
 def make_admin(message: telebot.types.Message) -> None:
     if message.from_user.id not in settings.admin_settings.superusers:
         bot.send_message(message.chat.id, "У вас нет прав на это действие")
@@ -329,6 +378,7 @@ def make_admin(message: telebot.types.Message) -> None:
 
 
 @bot.message_handler(commands=["unmake_admin"])
+@admin
 def unmake_admin(message: telebot.types.Message) -> None:
     if message.from_user.id not in settings.admin_settings.superusers:
         bot.send_message(message.chat.id, "У вас нет прав на это действие")
@@ -343,6 +393,7 @@ def unmake_admin(message: telebot.types.Message) -> None:
 
 
 @bot.message_handler(commands=["get_all_admins"])
+@admin
 def get_all_admins_usernames(message: telebot.types.Message) -> None:
     if message.from_user.id not in settings.admin_settings.superusers:
         bot.send_message(message.chat.id, "У вас нет прав на это действие")
