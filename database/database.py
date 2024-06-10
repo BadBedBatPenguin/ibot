@@ -39,7 +39,7 @@ class Users(DataBase):
             'username': message.chat.username,
             'first_name': message.from_user.first_name,
             'last_name': message.from_user.last_name,
-            'isSubscribed': False,
+            'is_admin': False,
         }
         """
         try:
@@ -51,16 +51,10 @@ class Users(DataBase):
                         "username": message.chat.username,
                         "first_name": message.from_user.first_name,
                         "last_name": message.from_user.last_name,
-                        "isSubscribed": False,
+                        "is_admin": False,
                     }
                 )
-            # if user were registered before
-            else:
-                print(
-                    f"Tried to register user(_id: {message.from_user.id}), but he were registered before."
-                )
 
-            # return True if operation is done
             return True
 
         except Exception as error:
