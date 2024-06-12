@@ -13,6 +13,7 @@ class AdminSettings:
     ]
 
     superusers = [629909066]
+    manager_chat_id = 629909066
 
 
 class UserSettings:
@@ -30,6 +31,7 @@ class UserSettings:
         ("Часы Apple", "apple_watch"),
         ("Аксессуары", "accessories"),
     ]
+    buy_message_to_manager = "Сообщение о покупке"
 
 
 class CommonSettings:

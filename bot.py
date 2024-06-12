@@ -128,7 +128,6 @@ def iphone_models(call: telebot.types.CallbackQuery) -> None:
 )
 def get_items(call: telebot.types.CallbackQuery) -> None:
     category = call.data.split(":")[0]
-    print(category)
     subcategory = call.data.split(":")[-1] if category != "iphones" else ""
     model = call.data.split(":")[-1] if category == "iphones" else ""
     items = items_table.get_items_obj_by_category_model_subcategory(
@@ -176,6 +175,14 @@ def get_item(call: telebot.types.CallbackQuery) -> None:
             f"Имя: {item.name}\nОписание: {item.description}\nЦена: {item.price}",
             reply_markup=markup,
         )
+
+
+@bot.callback_query_handler(func=lambda call: call.data.split("_")[0] == "buy")
+def buy_item(call: telebot.types.CallbackQuery) -> None:
+    item_id = call.data.split("_")[1]
+    item = items_table.get_item_obj_by_id(item_id)
+    bot.send_message(settings.admin_settings.manager_chat_id, settings.user_settings.buy_message_to_manager)
+    bot.send_message(call.message.chat.id, f"Ваш запрос на покупку товара принят.\nВаш товар:\n{item.name}\n{item.description}\n{item.price}")
 
 
 # admin panel
