@@ -181,8 +181,14 @@ def get_item(call: telebot.types.CallbackQuery) -> None:
 def buy_item(call: telebot.types.CallbackQuery) -> None:
     item_id = call.data.split("_")[1]
     item = items_table.get_item_obj_by_id(item_id)
-    bot.send_message(settings.admin_settings.manager_chat_id, settings.user_settings.buy_message_to_manager)
-    bot.send_message(call.message.chat.id, f"Ваш запрос на покупку товара принят.\nВаш товар:\n{item.name}\n{item.description}\n{item.price}")
+    bot.send_message(
+        settings.admin_settings.manager_chat_id,
+        settings.user_settings.buy_message_to_manager,
+    )
+    bot.send_message(
+        call.message.chat.id,
+        f"Ваш запрос на покупку товара принят.\nВаш товар:\n{item.name}\n{item.description}\n{item.price}",
+    )
 
 
 # admin panel
@@ -194,10 +200,13 @@ def admin_panel(message: telebot.types.Message) -> None:
 
 def _admin_panel(message: telebot.types.Message) -> None:
     markup = telebot.types.InlineKeyboardMarkup()
-    button = telebot.types.InlineKeyboardButton(
+    button_1 = telebot.types.InlineKeyboardButton(
         "Управление товарами", callback_data="items_management"
     )
-    markup.add(button)
+    button_2 = telebot.types.InlineKeyboardButton(
+        "Сделать рассылку", callback_data="send_spam"
+    )
+    markup.add(button_1, button_2)
 
     bot.send_message(message.chat.id, "Админ панель", reply_markup=markup)
 
@@ -495,6 +504,39 @@ def get_all_admins_usernames(message: telebot.types.Message) -> None:
         message.chat.id,
         ", ".join(users_table.get_admins_usernames()),
     )
+
+
+@bot.callback_query_handler(func=lambda call: call.data == "send_spam")
+@admin
+def send_spam(call: telebot.types.CallbackQuery) -> None:
+    msg = bot.send_message(
+        call.message.chat.id, "Отправьте сообщение, которое хотели бы разослать"
+    )
+    bot.register_next_step_handler(msg, send_spam_message)
+
+
+@admin
+def send_spam_message(message: telebot.types.Message) -> None:
+    markup = telebot.types.InlineKeyboardMarkup()
+    yes_button = telebot.types.InlineKeyboardButton("Да", callback_data=f"send_spam_yes:{message.text}")
+    no_button = telebot.types.InlineKeyboardButton("Нет", callback_data="/admin")
+    markup.add(yes_button, no_button)
+
+    bot.send_message(
+        message.chat.id,
+        "Это сообщение будет разослано всем юзерам, вы подтверждаете рассылку?",
+        reply_markup=markup,
+    )
+
+
+@bot.callback_query_handler(func=lambda call: call.data.split(":")[0] == "send_spam_yes")
+@admin
+def send_spam_yes(call: telebot.types.CallbackQuery) -> None:
+    users = users_table.get_all_users_ids()
+    for user in users:
+        bot.send_message(user, call.data.split(":")[1])
+
+    bot.send_message(call.message.chat.id, "Рассылка завершена")
 
 
 bot.polling(none_stop=True)

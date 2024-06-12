@@ -131,6 +131,17 @@ class Users(DataBase):
         except Exception as error:
             print(error)
 
+    def get_all_users_ids(self) -> list[str]:
+        """
+        return all users ids in a list
+        list[str]
+        """
+        try:
+            return [user["_id"] for user in self._collection.find()]
+
+        except Exception as error:
+            print(error)
+
     def get_admins_usernames(self):
         """
         return users list with usernames from collection[users] for admins [is_admin == True]
