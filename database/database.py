@@ -120,17 +120,6 @@ class Users(DataBase):
             print(error)
             return False
 
-    def check_subscription_status_for_user(self, user_id):
-        """
-        Check user subscription status;
-        return True/False values;
-        """
-        try:
-            return self._collection.find_one({"_id": user_id})["isSubscribed"]
-
-        except Exception as error:
-            print(error)
-
     def get_all_users_data(self):
         """
         return users list with all data from collection[users]

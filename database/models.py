@@ -11,6 +11,7 @@ class Item:
         category: str | None = None,
         subcategory: str | None = None,
         model: str | None = None,
+        photo: str | None = None,
         price: Decimal = Decimal(0),
     ):
         self._id = _id
@@ -19,6 +20,7 @@ class Item:
         self.category = category
         self.subcategory = subcategory
         self.model = model
+        self.photo = photo
         self.price = price
 
     def dict(self) -> dict:
@@ -29,5 +31,6 @@ class Item:
             "category": self.category,
             "subcategory": self.subcategory,
             "model": self.model,
+            "photo": self.photo,
             "price": float(self.price),
         }
