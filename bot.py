@@ -4,6 +4,7 @@ from decimal import Decimal
 import dns.resolver
 import telebot
 
+import models
 import settings
 from database.database import Items, Users
 from database.models import Item
@@ -59,7 +60,10 @@ def get_main_menu(message: telebot.types.Message) -> None:
     _start_menu(message, settings.user_settings.menu_message)
 
 
-@bot.callback_query_handler(func=lambda call: call.data == "/start")
+@bot.callback_query_handler(
+    func=lambda call: models.CallBackData(from_str=call.data).action == "start"
+    and not models.CallBackData(from_str=call.data).admin
+)
 def back_to_main_menu(call: telebot.types.CallbackQuery) -> None:
     bot.delete_message(call.message.chat.id, call.message.message_id)
     _start_menu(call.message, settings.user_settings.menu_message)
@@ -67,99 +71,86 @@ def back_to_main_menu(call: telebot.types.CallbackQuery) -> None:
 
 def _start_menu(message: telebot.types.Message, text: str) -> None:
     markup = telebot.types.InlineKeyboardMarkup()
-    for menu_text, callback_data in settings.user_settings.main_menu:
-        button = telebot.types.InlineKeyboardButton(
-            menu_text, callback_data=callback_data
-        )
-        markup.add(button)
+    menu = models.UserMainMenu()
+    markup.add(*menu.buttons)
 
     bot.send_message(message.chat.id, text, reply_markup=markup)
 
 
-@bot.callback_query_handler(func=lambda call: call.data == "get_items")
+@bot.callback_query_handler(
+    func=lambda call: models.CallBackData(from_str=call.data).action == "categories"
+    and not models.CallBackData(from_str=call.data).admin
+)
 def categories(call: telebot.types.CallbackQuery) -> None:
     markup = telebot.types.InlineKeyboardMarkup()
-    buttons = (
-        telebot.types.InlineKeyboardButton(text, callback_data=callback_data)
-        for text, callback_data in settings.user_settings.categories
-    )
-    back_button = telebot.types.InlineKeyboardButton("Назад", callback_data="/start")
-    markup.add(*buttons, back_button)
+    menu = models.Categories(admin=False)
+    markup.add(*menu.buttons)
 
     bot.delete_message(call.message.chat.id, call.message.message_id)
-    bot.send_message(call.message.chat.id, "Выберите категорию", reply_markup=markup)
+    bot.send_message(call.message.chat.id, menu.title, reply_markup=markup)
 
 
 @bot.callback_query_handler(
-    func=lambda call: call.data in ["ipads", "macbooks", "apple_watch", "accessories"]
+    func=lambda call: models.CallBackData(from_str=call.data).action == "subcategories"
+    and not models.CallBackData(from_str=call.data).admin
 )
-def subcategories(call: telebot.types.CallbackQuery) -> None:
+def accessories_subcategories(call: telebot.types.CallbackQuery) -> None:
     markup = telebot.types.InlineKeyboardMarkup()
-    buttons = (
-        telebot.types.InlineKeyboardButton(
-            subcategory, callback_data=f"{call.data}:{subcategory}"
-        )
-        for subcategory in settings.common_settings.subcategories[call.data]
+    menu = models.Subcategories(
+        admin=False, category=models.CallBackData(from_str=call.data).category
     )
-    back_button = telebot.types.InlineKeyboardButton("Назад", callback_data="get_items")
-    markup.add(*buttons, back_button)
+    markup.add(*menu.buttons)
 
     bot.delete_message(call.message.chat.id, call.message.message_id)
-    bot.send_message(call.message.chat.id, "Выберите подкатегорию", reply_markup=markup)
+    bot.send_message(call.message.chat.id, menu.title, reply_markup=markup)
 
 
-@bot.callback_query_handler(func=lambda call: call.data == "iphones")
+@bot.callback_query_handler(
+    func=lambda call: models.CallBackData(from_str=call.data).action == "models"
+    and not models.CallBackData(from_str=call.data).admin
+)
 def iphone_models(call: telebot.types.CallbackQuery) -> None:
     markup = telebot.types.InlineKeyboardMarkup()
-    buttons = (
-        telebot.types.InlineKeyboardButton(model.split(":")[-1], callback_data=model)
-        for model in settings.common_settings.iphone_models
-    )
-    back_button = telebot.types.InlineKeyboardButton("Назад", callback_data="get_items")
-    markup.add(*buttons, back_button)
+    menu = models.IphonesModels(admin=False)
+    markup.add(*menu.buttons)
 
     bot.delete_message(call.message.chat.id, call.message.message_id)
-    bot.send_message(call.message.chat.id, "Выберите модель", reply_markup=markup)
+    bot.send_message(call.message.chat.id, menu.title, reply_markup=markup)
 
 
 @bot.callback_query_handler(
-    func=lambda call: call.data in settings.common_settings.all_subcategories
-    or call.data in settings.common_settings.iphone_models
+    func=lambda call: models.CallBackData(from_str=call.data).action == "items"
+    and not models.CallBackData(from_str=call.data).admin
 )
 def get_items(call: telebot.types.CallbackQuery) -> None:
-    category = call.data.split(":")[0]
-    subcategory = call.data.split(":")[-1] if category != "iphones" else ""
-    model = call.data.split(":")[-1] if category == "iphones" else ""
+    callback_data = models.CallBackData(from_str=call.data)
     items = items_table.get_items_obj_by_category_model_subcategory(
-        category, model, subcategory
+        callback_data.category, callback_data.model, callback_data.subcategory
     )
     markup = telebot.types.InlineKeyboardMarkup()
-    buttons = (
-        telebot.types.InlineKeyboardButton(
-            f"Name: {item.name}\nDescription: {item.description}\nPrice: {item.price}",
-            callback_data=f"item_{item._id}",
-        )
-        for item in items
+    menu = models.Items(
+        admin=False,
+        category=callback_data.category,
+        model=callback_data.model,
+        subcategory=callback_data.subcategory,
+        items=items,
     )
-    back_button = telebot.types.InlineKeyboardButton("Назад", callback_data=category)
-    markup.add(*buttons, back_button)
+    markup.add(*menu.buttons)
 
     bot.delete_message(call.message.chat.id, call.message.message_id)
-    bot.send_message(call.message.chat.id, "Выберите товар", reply_markup=markup)
+    bot.send_message(call.message.chat.id, menu.title, reply_markup=markup)
 
 
-@bot.callback_query_handler(func=lambda call: call.data.split("_")[0] == "item")
+@bot.callback_query_handler(
+    func=lambda call: models.CallBackData(from_str=call.data).action == "item_info"
+    and not models.CallBackData(from_str=call.data).admin
+)
 def get_item(call: telebot.types.CallbackQuery) -> None:
-    item_id = call.data.split("_")[1]
-    item = items_table.get_item_obj_by_id(item_id)
+    callback_data = models.CallBackData(from_str=call.data)
+    item = items_table.get_item_obj_by_id(callback_data.item_id)
     markup = telebot.types.InlineKeyboardMarkup()
-    button = telebot.types.InlineKeyboardButton(
-        "Купить", callback_data=f"buy_{item._id}"
-    )
-    back_button = telebot.types.InlineKeyboardButton(
-        "Назад", callback_data=f"{item.category}:{item.model or item.subcategory}"
-    )
-    markup.add(button, back_button)
+    menu = models.ItemView(item)
+    markup.add(*menu.buttons)
 
     bot.delete_message(call.message.chat.id, call.message.message_id)
     if item.photo:
@@ -177,10 +168,13 @@ def get_item(call: telebot.types.CallbackQuery) -> None:
         )
 
 
-@bot.callback_query_handler(func=lambda call: call.data.split("_")[0] == "buy")
+@bot.callback_query_handler(
+    func=lambda call: models.CallBackData(from_str=call.data).action == "buy"
+    and not models.CallBackData(from_str=call.data).admin
+)
 def buy_item(call: telebot.types.CallbackQuery) -> None:
-    item_id = call.data.split("_")[1]
-    item = items_table.get_item_obj_by_id(item_id)
+    callback_data = models.CallBackData(from_str=call.data)
+    item = items_table.get_item_obj_by_id(callback_data.item_id)
     bot.send_message(
         settings.admin_settings.manager_chat_id,
         settings.user_settings.buy_message_to_manager,
@@ -200,139 +194,97 @@ def admin_panel(message: telebot.types.Message) -> None:
 
 def _admin_panel(message: telebot.types.Message) -> None:
     markup = telebot.types.InlineKeyboardMarkup()
-    button_1 = telebot.types.InlineKeyboardButton(
-        "Управление товарами", callback_data="items_management"
-    )
-    button_2 = telebot.types.InlineKeyboardButton(
-        "Сделать рассылку", callback_data="send_spam"
-    )
-    markup.add(button_1, button_2)
-
-    bot.send_message(message.chat.id, "Админ панель", reply_markup=markup)
+    menu = models.AdminMainMenu()
+    markup.add(*menu.buttons)
+    bot.send_message(message.chat.id, menu.title, reply_markup=markup)
 
 
-@bot.callback_query_handler(func=lambda call: call.data == "items_management")
+@bot.callback_query_handler(
+    func=lambda call: models.CallBackData(from_str=call.data).action == "categories"
+    and models.CallBackData(from_str=call.data).admin
+)
 @admin
-def items_management(call: telebot.types.CallbackQuery) -> None:
+def admin_categories(call: telebot.types.CallbackQuery) -> None:
     markup = telebot.types.InlineKeyboardMarkup()
-    buttons = (
-        telebot.types.InlineKeyboardButton(item[0], callback_data=item[1])
-        for item in settings.admin_settings.items_management
-    )
-    back_button = telebot.types.InlineKeyboardButton("Назад", callback_data="/admin")
-    markup.add(*buttons, back_button)
+    menu = models.Categories(admin=True)
+    markup.add(*menu.buttons)
 
     bot.delete_message(call.message.chat.id, call.message.message_id)
-    bot.send_message(call.message.chat.id, "Выберите категорию", reply_markup=markup)
+    bot.send_message(call.message.chat.id, menu.title, reply_markup=markup)
 
 
-@bot.callback_query_handler(func=lambda call: call.data == "/admin")
+@bot.callback_query_handler(
+    func=lambda call: models.CallBackData(from_str=call.data).action == "main_menu"
+    and models.CallBackData(from_str=call.data).admin
+)
 @admin
 def back_to_admin_panel(call: telebot.types.CallbackQuery) -> None:
     bot.delete_message(call.message.chat.id, call.message.message_id)
     _admin_panel(call.message)
 
 
-@bot.callback_query_handler(func=lambda call: call.data == "admin_iphones")
-@admin
-def admin_iphones(call: telebot.types.CallbackQuery) -> None:
-    markup = telebot.types.InlineKeyboardMarkup()
-    buttons = (
-        telebot.types.InlineKeyboardButton(model, callback_data=f"admin_{model}")
-        for model in settings.common_settings.iphone_models
-    )
-    back_button = telebot.types.InlineKeyboardButton(
-        "Назад", callback_data="items_management"
-    )
-    markup.add(*buttons, back_button)
-
-    bot.delete_message(call.message.chat.id, call.message.message_id)
-    bot.send_message(call.message.chat.id, "Выберите модель", reply_markup=markup)
-
-
 @bot.callback_query_handler(
-    func=lambda call: call.data
-    in [f"admin_{model}" for model in settings.common_settings.iphone_models]
+    func=lambda call: models.CallBackData(from_str=call.data).action == "models"
+    and models.CallBackData(from_str=call.data).admin
+    and models.CallBackData(from_str=call.data).category == "iphones"
 )
 @admin
 def admin_iphone_models(call: telebot.types.CallbackQuery) -> None:
     markup = telebot.types.InlineKeyboardMarkup()
-    buttons = (
-        telebot.types.InlineKeyboardButton(
-            item[0],
-            callback_data=item[1].format(
-                category="iphones", model=call.data, subcategory=""
-            ),
-        )
-        for item in settings.admin_settings.update_items
-    )
-    back_button = telebot.types.InlineKeyboardButton("Назад", callback_data="iphones")
-    markup.add(*buttons, back_button)
+    menu = models.IphonesModels(admin=True)
+    markup.add(*menu.buttons)
 
     bot.delete_message(call.message.chat.id, call.message.message_id)
-    bot.send_message(
-        call.message.chat.id, "Редактирование товаров", reply_markup=markup
-    )
+    bot.send_message(call.message.chat.id, menu.title, reply_markup=markup)
 
 
 @bot.callback_query_handler(
-    func=lambda call: call.data
-    in ["admin_ipads", "admin_macbooks", "admin_apple_watch", "admin_accessories"]
+    func=lambda call: models.CallBackData(from_str=call.data).action == "items"
+    and models.CallBackData(from_str=call.data).admin
+)
+@admin
+def admin_item_menu(call: telebot.types.CallbackQuery) -> None:
+    callback_data = models.CallBackData(from_str=call.data)
+    markup = telebot.types.InlineKeyboardMarkup()
+    menu = models.Items(
+        admin=True,
+        category=callback_data.category,
+        model=callback_data.model,
+        subcategory=callback_data.subcategory,
+    )
+    markup.add(*menu.buttons)
+
+    bot.delete_message(call.message.chat.id, call.message.message_id)
+    bot.send_message(call.message.chat.id, menu.title, reply_markup=markup)
+
+
+@bot.callback_query_handler(
+    func=lambda call: models.CallBackData(from_str=call.data).action == "subcategories"
+    and models.CallBackData(from_str=call.data).admin
 )
 @admin
 def admin_choose_subcategory(call: telebot.types.CallbackQuery) -> None:
+    callback_data = models.CallBackData(from_str=call.data)
     markup = telebot.types.InlineKeyboardMarkup()
-    buttons = (
-        telebot.types.InlineKeyboardButton(item, callback_data=f"{call.data}:{item}")
-        for item in settings.common_settings.subcategories[
-            call.data.replace("admin_", "")
-        ]
-    )
-    back_button = telebot.types.InlineKeyboardButton(
-        "Назад", callback_data="items_management"
-    )
-    markup.add(*buttons, back_button)
+    menu = models.Subcategories(admin=True, category=callback_data.category)
+    markup.add(*menu.buttons)
 
     bot.delete_message(call.message.chat.id, call.message.message_id)
-    bot.send_message(call.message.chat.id, "Выберите подкатегорию", reply_markup=markup)
+    bot.send_message(call.message.chat.id, menu.title, reply_markup=markup)
 
 
 @bot.callback_query_handler(
-    func=lambda call: call.data
-    in [
-        f"admin_{subcategory}"
-        for subcategory in settings.common_settings.all_subcategories
-    ]
+    func=lambda call: models.CallBackData(from_str=call.data).action == "add"
+    and models.CallBackData(from_str=call.data).admin
 )
 @admin
-def update_items(call: telebot.types.CallbackQuery) -> None:
-    markup = telebot.types.InlineKeyboardMarkup()
-    category = call.data.split(":")[0].replace("admin_", "")
-    buttons = (
-        telebot.types.InlineKeyboardButton(
-            item[0],
-            callback_data=item[1].format(
-                category=category,
-                model="",
-                subcategory=call.data.split(":")[1],
-            ),
-        )
-        for item in settings.admin_settings.update_items
-    )
-    back_button = telebot.types.InlineKeyboardButton("Назад", callback_data=category)
-    markup.add(*buttons, back_button)
-
-    bot.delete_message(call.message.chat.id, call.message.message_id)
-    bot.send_message(
-        call.message.chat.id, "Редактирование товаров", reply_markup=markup
-    )
-
-
-@bot.callback_query_handler(func=lambda call: call.data.split("_")[0] == "add")
-@admin
 def add_item(call: telebot.types.CallbackQuery) -> None:
-    category, model, subcategory = call.data.split("_")[1:]
-    item = Item(category=category, model=model, subcategory=subcategory)
+    callback_data = models.CallBackData(from_str=call.data)
+    item = Item(
+        category=callback_data.category,
+        model=callback_data.model,
+        subcategory=callback_data.subcategory,
+    )
     msg = bot.send_message(call.message.chat.id, "Введите название товара")
     bot.register_next_step_handler(msg, save_item_name, item=item)
 
@@ -366,62 +318,66 @@ def save_item_price(message: telebot.types.Message, item: Item):
 
 
 @admin
-@bot.callback_query_handler(func=lambda call: call.data.split("_")[0] == "deleteitems")
+@bot.callback_query_handler(
+    func=lambda call: models.CallBackData(from_str=call.data).action == "delete"
+    and models.CallBackData(from_str=call.data).admin
+)
 def delete_items(call: telebot.types.CallbackQuery) -> None:
-    category, model, subcategory = call.data.split("_")[1:]
+    callback_data = models.CallBackData(from_str=call.data)
     items = items_table.get_items_obj_by_category_model_subcategory(
-        category, model, subcategory
+        callback_data.category, callback_data.model, callback_data.subcategory
     )
     markup = telebot.types.InlineKeyboardMarkup()
-    buttons = (
-        telebot.types.InlineKeyboardButton(
-            f"Name: {item.name}\nDescription: {item.description}\nPrice: {item.price}",
-            callback_data=f"deleteitem_{item._id}",
-        )
-        for item in items
+    menu = models.DeleteItems(
+        items, callback_data.category, callback_data.subcategory, callback_data.model
     )
-    markup.add(*buttons)
+    markup.add(*menu.buttons)
 
     bot.delete_message(call.message.chat.id, call.message.message_id)
-    bot.send_message(call.message.chat.id, "Какой товар удалить?", reply_markup=markup)
+    bot.send_message(call.message.chat.id, menu.title, reply_markup=markup)
 
 
-@bot.callback_query_handler(func=lambda call: call.data.split("_")[0] == "deleteitem")
+@bot.callback_query_handler(
+    func=lambda call: models.CallBackData(from_str=call.data).action == "deleteitem"
+    and models.CallBackData(from_str=call.data).admin
+)
 @admin
 def delete_item(call: telebot.types.CallbackQuery) -> None:
-    item_id = call.data.split("_")[1]
-    items_table.delete_item(item_id)
+    callback_data = models.CallBackData(from_str=call.data)
+    items_table.delete_item(callback_data.item_id)
 
     bot.delete_message(call.message.chat.id, call.message.message_id)
-    bot.send_message(call.message.chat.id, f"Товар с id {item_id} удалён")
+    bot.send_message(call.message.chat.id, f"Товар с id {callback_data.item_id} удалён")
 
 
-@bot.callback_query_handler(func=lambda call: call.data.split("_")[0] == "updateitems")
+@bot.callback_query_handler(
+    func=lambda call: models.CallBackData(from_str=call.data).action == "update"
+    and models.CallBackData(from_str=call.data).admin
+)
 @admin
 def uppdate_items(call: telebot.types.CallbackQuery) -> None:
-    category, model, subcategory = call.data.split("_")[1:]
+    callback_data = models.CallBackData(from_str=call.data)
     items = items_table.get_items_obj_by_category_model_subcategory(
-        category, model, subcategory
+        callback_data.category, callback_data.model, callback_data.subcategory
     )
     markup = telebot.types.InlineKeyboardMarkup()
-    buttons = (
-        telebot.types.InlineKeyboardButton(
-            f"Name: {item.name}\nDescription: {item.description}\nPrice: {item.price}",
-            callback_data=f"updateitem_{item._id}",
-        )
-        for item in items
+    menu = models.UpdateItems(
+        items, callback_data.category, callback_data.subcategory, callback_data.model
     )
-    markup.add(*buttons)
+    markup.add(*menu.buttons)
 
     bot.delete_message(call.message.chat.id, call.message.message_id)
-    bot.send_message(call.message.chat.id, "Какой товар изменить?", reply_markup=markup)
+    bot.send_message(call.message.chat.id, menu.title, reply_markup=markup)
 
 
-@bot.callback_query_handler(func=lambda call: call.data.split("_")[0] == "updateitem")
+@bot.callback_query_handler(
+    func=lambda call: models.CallBackData(from_str=call.data).action == "updateitem"
+    and models.CallBackData(from_str=call.data).admin
+)
 @admin
 def update_item(call: telebot.types.CallbackQuery) -> None:
-    item_id = call.data.split("_")[1]
-    item = items_table.get_item_obj_by_id(item_id)
+    callback_data = models.CallBackData(from_str=call.data)
+    item = items_table.get_item_obj_by_id(callback_data.item_id)
 
     msg = bot.send_message(
         call.message.chat.id,
@@ -443,6 +399,22 @@ def update_item_name(message: telebot.types.Message, item: Item):
 @admin
 def update_item_description(message: telebot.types.Message, item: Item):
     item.description = message.text if message.text != "skip" else item.description
+    msg = bot.send_photo(
+        message.chat.id,
+        item.photo,
+        caption="Текущее фото товара.\nПриложите новое фото товара или отправьте skip, чтобы оставить без изменений",
+        reply_to_message_id=message.message_id,
+    )
+    bot.register_next_step_handler(msg, update_item_photo, item=item)
+
+
+@admin
+def update_item_photo(message: telebot.types.Message, item: Item):
+    item.photo = (
+        message.photo[-1].file_id
+        if (message.photo and message.text != "skip")
+        else item.photo
+    )
     msg = bot.reply_to(
         message,
         f"Текущая цена товара: {item.price}\nВведите новую цену товара или отправьте skip, чтобы оставить без изменений",
@@ -506,7 +478,10 @@ def get_all_admins_usernames(message: telebot.types.Message) -> None:
     )
 
 
-@bot.callback_query_handler(func=lambda call: call.data == "send_spam")
+@bot.callback_query_handler(
+    func=lambda call: models.CallBackData(from_str=call.data).action == "send_spam"
+    and models.CallBackData(from_str=call.data).admin
+)
 @admin
 def send_spam(call: telebot.types.CallbackQuery) -> None:
     msg = bot.send_message(
@@ -517,26 +492,23 @@ def send_spam(call: telebot.types.CallbackQuery) -> None:
 
 @admin
 def send_spam_message(message: telebot.types.Message) -> None:
-    markup = telebot.types.InlineKeyboardMarkup()
-    yes_button = telebot.types.InlineKeyboardButton("Да", callback_data=f"send_spam_yes:{message.text}")
-    no_button = telebot.types.InlineKeyboardButton("Нет", callback_data="/admin")
-    markup.add(yes_button, no_button)
-
-    bot.send_message(
+    msg = bot.send_message(
         message.chat.id,
         "Это сообщение будет разослано всем юзерам, вы подтверждаете рассылку?",
-        reply_markup=markup,
     )
+    bot.register_next_step_handler(msg, send_spam_confirmation, message.text)
 
 
-@bot.callback_query_handler(func=lambda call: call.data.split(":")[0] == "send_spam_yes")
 @admin
-def send_spam_yes(call: telebot.types.CallbackQuery) -> None:
-    users = users_table.get_all_users_ids()
-    for user in users:
-        bot.send_message(user, call.data.split(":")[1])
+def send_spam_confirmation(message: telebot.types.Message, text: str) -> None:
+    if message.text.lower() == "да":
+        users = users_table.get_all_users_ids()
+        for user in users:
+            bot.send_message(user, text)
 
-    bot.send_message(call.message.chat.id, "Рассылка завершена")
+        bot.send_message(message.chat.id, "Рассылка завершена")
+    else:
+        _admin_panel(message)
 
 
 bot.polling(none_stop=True)

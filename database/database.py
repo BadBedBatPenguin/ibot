@@ -272,7 +272,7 @@ class Items(DataBase):
             print(error)
 
     def get_items_obj_by_category_model_subcategory(
-        self, category: str, model: str, subcategory: str
+        self, category: str, model: str | None, subcategory: str | None
     ) -> list[Item] | None:
         """
         return items list by category, model, subcategory
@@ -281,7 +281,11 @@ class Items(DataBase):
             return [
                 Item(**item)
                 for item in self._collection.find(
-                    {"category": category, "model": model, "subcategory": subcategory}
+                    {
+                        "category": category,
+                        "model": model,
+                        "subcategory": subcategory,
+                    }
                 )
             ]
 

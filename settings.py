@@ -1,15 +1,20 @@
 class AdminSettings:
-    items_management = [
+    categories = [
         ("Айфоны", "admin_iphones"),
         ("Айпады", "admin_ipads"),
         ("Макбуки", "admin_macbooks"),
-        ("Часы Apple", "admin_apple_watch"),
+        ("Apple watch", "admin_apple_watch"),
         ("Аксессуары", "admin_accessories"),
     ]
-    update_items = [
+    admin_menu = [
         ("Добавить товар", "add_{category}_{model}_{subcategory}"),
         ("Удалить товар", "deleteitems_{category}_{model}_{subcategory}"),
         ("Изменить товар", "updateitems_{category}_{model}_{subcategory}"),
+    ]
+    items_actions = [
+        ("Добавить товар", "add"),
+        ("Удалить товар", "delete"),
+        ("Изменить товар", "update"),
     ]
 
     superusers = [629909066]
@@ -18,7 +23,7 @@ class AdminSettings:
 
 class UserSettings:
     main_menu = [
-        ("Товары", "get_items"),
+        ("Товары", "categories"),
         ("Выкуп", "buyout"),
         ("Ремонт", "fix"),
     ]
@@ -28,30 +33,59 @@ class UserSettings:
         ("Айфоны", "iphones"),
         ("Айпады", "ipads"),
         ("Макбуки", "macbooks"),
-        ("Часы Apple", "apple_watch"),
+        ("Apple watch", "apple_watch"),
         ("Аксессуары", "accessories"),
     ]
     buy_message_to_manager = "Сообщение о покупке"
 
 
 class CommonSettings:
-    subcategories = {
-        "ipads": ["air", "mini", "pro"],
-        "macbooks": ["air", "pro"],
-        "apple_watch": ["series_3", "series_4", "series_5", "series_6", "series_7"],
-        "accessories": ["cases", "chargers", "headphones", "cables"],
-    }
-    iphone_models_names = ["12", "13", "14", "15"]
-    iphone_models = [f"iphones:{model}" for model in iphone_models_names]
+    categories = [
+        ("Айфоны", "models", "iphones"),
+        ("Айпады", "items", "ipads"),
+        ("Макбуки", "items", "macbooks"),
+        ("Apple watch", "items", "apple_watch"),
+        ("Аксессуары", "subcategories", "accessories"),
+    ]
+    accessories = [
+        ("Зарядки", "chargers"),
+        ("Чехлы", "cases"),
+        ("Наушники", "headphones"),
+        ("Защитные стекла", "protection_glasses"),
+        ("Прочее", "other"),
+    ]
+    iphone_models = [
+        "iPhone X",
+        "iPhone XR",
+        "iPhone XS",
+        "iPhone XS Max",
+        "iPhone 11",
+        "iPhone 11 Pro",
+        "iPhone 11 Pro Max",
+        "iPhone 12",
+        "iPhone 12 mini",
+        "iPhone 12 Pro",
+        "iPhone 12 Pro Max",
+        "iPhone 13",
+        "iPhone 13 mini",
+        "iPhone 13 Pro",
+        "iPhone 13 Pro Max",
+        "iPhone 14",
+        "iPhone 14 Plus",
+        "iPhone 14 Pro",
+        "iPhone 14 Pro Max",
+        "iPhone 15",
+        "iPhone 15 Plus",
+        "iPhone 15 Pro",
+        "iPhone 15 Pro Max",
+    ]
+    # iphone_models = [(model, f"iphones:{model}") for model in iphone_models]
     default_photo = ""
+    categories_without_subcategory = ["ipads", "macbooks", "apple_watch"]
 
     @property
-    def all_subcategories(self) -> list[str]:
-        return [
-            f"{category}:{subcategory}"
-            for category in self.subcategories
-            for subcategory in self.subcategories[category]
-        ]
+    def accessory_subcategories(self) -> list[str]:
+        return [f"accessories:{subcategory}" for _, subcategory in self.accessories]
 
 
 admin_settings = AdminSettings()
