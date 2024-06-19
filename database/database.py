@@ -62,6 +62,17 @@ class Users(DataBase):
             print(error)
             return False
 
+    def is_registered(self, user_id):
+        """
+        check if user is registered
+        """
+        try:
+            return self._collection.count_documents({"_id": user_id}) > 0
+
+        except Exception as error:
+            print(error)
+            return False
+
     def make_user_admin(self, username: str) -> bool | str:
         """
         make user admmin

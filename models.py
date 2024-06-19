@@ -13,6 +13,7 @@ class CallBackData:
         subcategory: str | None = None,
         model: str | None = None,
         item_id: str | None = None,
+        user_id: str | None = None,
         from_str: str | None = None,
     ) -> None:
         if from_str:
@@ -23,6 +24,7 @@ class CallBackData:
             self.subcategory = data[3] if data[3] else None
             self.model = data[4] if data[4] else None
             self.item_id = data[5] if data[5] else None
+            self.user_id = data[6] if data[6] else None
             return
         self.admin = admin
         self.action = action
@@ -30,6 +32,7 @@ class CallBackData:
         self.subcategory = subcategory if subcategory else ""
         self.model = model if model else ""
         self.item_id = item_id if item_id else ""
+        self.user_id = user_id if user_id else ""
 
     def str(self) -> str:
         return f"{self.admin}:{self.action}:{self.category}:{self.subcategory}:{self.model}:{self.item_id}"
@@ -307,3 +310,29 @@ class UpdateItems(Menu):
                 ).str(),
             )
         )
+
+
+class StartRequest(Menu):
+    def __init__(self, user: telebot.types.User) -> None:
+        self.action = "start_request"
+        self.admin = True
+        self.prev_action = None
+        self.title = user_settings.start_request_to_manager.format(username=user.username)
+        self.buttons = [
+            telebot.types.InlineKeyboardButton(
+                "Принять",
+                callback_data=CallBackData(
+                    admin=self.admin,
+                    action="accept_request",
+                    user_id=user.id,
+                ).str(),
+            ),
+            telebot.types.InlineKeyboardButton(
+                "Отклонить",
+                callback_data=CallBackData(
+                    admin=self.admin,
+                    action="reject_request",
+                    user_id=user.id,
+                ).str(),
+            ),
+        ]

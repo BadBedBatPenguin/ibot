@@ -27,7 +27,7 @@ class UserSettings:
         ("Выкуп", "buyout"),
         ("Ремонт", "fix"),
     ]
-    welcome_message = "Приветственное письмо"
+    welcome_message = "Приветственное письмо в котором говорится что чтобы открыть меню нужно ввести /menu и что заявка подтверждена"
     menu_message = "Главное меню"
     categories = [
         ("Айфоны", "iphones"),
@@ -37,6 +37,9 @@ class UserSettings:
         ("Аксессуары", "accessories"),
     ]
     buy_message_to_manager = "Сообщение о покупке"
+    start_request_to_manager = (
+        "Пользователь @{username} хочет вступить в группу с ботом. Принять запрос?"
+    )
 
 
 class CommonSettings:

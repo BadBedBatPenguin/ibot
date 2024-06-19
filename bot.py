@@ -51,13 +51,47 @@ def admin(func):
 
 @bot.message_handler(commands=["start"])
 def send_start_message(message: telebot.types.Message) -> None:
-    users_table.register_user(message)
-    _start_menu(message, settings.user_settings.welcome_message)
+    if not users_table.is_registered(message.from_user.id):
+        menu = models.StartRequest(user=message.from_user)
+        markup = telebot.types.InlineKeyboardMarkup()
+        markup.add(*menu.buttons)
+        bot.send_message(
+            settings.admin_settings.manager_chat_id,
+            menu.title,
+            reply_markup=markup,
+        )
+        bot.send_message(
+            message.chat.id,
+            "Ваш запрос на встепление в группу принят.\nОжидайте подтверждения от администратора",
+        )
+    else:
+        _start_menu(message.chat.id, settings.user_settings.menu_message)
+
+
+@bot.callback_query_handler(
+    func=lambda call: models.CallBackData(from_str=call.data).action == "accept_request"
+    and models.CallBackData(from_str=call.data).admin
+)
+def accept_start_request(call: telebot.types.CallbackQuery) -> None:
+    callback_data = models.CallBackData(from_str=call.data)
+    users_table.register_user(call.message.chat.id)
+    _start_menu(callback_data.user_id, settings.user_settings.welcome_message)
+    bot.delete_message(call.message.chat.id, call.message.message_id)
+
+
+@bot.callback_query_handler(
+    func=lambda call: models.CallBackData(from_str=call.data).action == "reject_request"
+    and models.CallBackData(from_str=call.data).admin
+)
+def reject_start_request(call: telebot.types.CallbackQuery) -> None:
+    callback_data = models.CallBackData(from_str=call.data)
+    bot.send_message(callback_data.user_id, "Ваш запрос на вступление в группу отклонён")
+    bot.delete_message(call.message.chat.id, call.message.message_id)
 
 
 @bot.message_handler(commands=["menu"])
 def get_main_menu(message: telebot.types.Message) -> None:
-    _start_menu(message, settings.user_settings.menu_message)
+    _start_menu(message.chat.id, settings.user_settings.menu_message)
 
 
 @bot.callback_query_handler(
@@ -66,15 +100,15 @@ def get_main_menu(message: telebot.types.Message) -> None:
 )
 def back_to_main_menu(call: telebot.types.CallbackQuery) -> None:
     bot.delete_message(call.message.chat.id, call.message.message_id)
-    _start_menu(call.message, settings.user_settings.menu_message)
+    _start_menu(call.message.chat.id, settings.user_settings.menu_message)
 
 
-def _start_menu(message: telebot.types.Message, text: str) -> None:
+def _start_menu(chat_id: str, text: str) -> None:
     markup = telebot.types.InlineKeyboardMarkup()
     menu = models.UserMainMenu()
     markup.add(*menu.buttons)
 
-    bot.send_message(message.chat.id, text, reply_markup=markup)
+    bot.send_message(chat_id, text, reply_markup=markup)
 
 
 @bot.callback_query_handler(
