@@ -35,7 +35,7 @@ class CallBackData:
         self.user_id = user_id if user_id else ""
 
     def str(self) -> str:
-        return f"{self.admin}:{self.action}:{self.category}:{self.subcategory}:{self.model}:{self.item_id}"
+        return f"{self.admin}:{self.action}:{self.category}:{self.subcategory}:{self.model}:{self.item_id}:{self.user_id}"
 
 
 class Menu:

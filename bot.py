@@ -74,7 +74,7 @@ def send_start_message(message: telebot.types.Message) -> None:
 )
 def accept_start_request(call: telebot.types.CallbackQuery) -> None:
     callback_data = models.CallBackData(from_str=call.data)
-    users_table.register_user(call.message.chat.id)
+    users_table.register_user(call.message)
     _start_menu(callback_data.user_id, settings.user_settings.welcome_message)
     bot.delete_message(call.message.chat.id, call.message.message_id)
 
@@ -191,13 +191,13 @@ def get_item(call: telebot.types.CallbackQuery) -> None:
         bot.send_photo(
             call.message.chat.id,
             item.photo,
-            f"Имя: {item.name}\nОписание: {item.description}\nЦена: {item.price}",
+            str(item),
             reply_markup=markup,
         )
     else:
         bot.send_message(
             call.message.chat.id,
-            f"Имя: {item.name}\nОписание: {item.description}\nЦена: {item.price}",
+            str(item),
             reply_markup=markup,
         )
 
@@ -340,6 +340,13 @@ def save_item_description(message: telebot.types.Message, item: Item):
 @admin
 def save_item_photo(message: telebot.types.Message, item: Item):
     item.photo = message.photo[-1].file_id if message.photo else None
+    msg = bot.reply_to(message, "Введите ссылку на фотографии товара, или отправьте skip, если фотографий нет")
+    bot.register_next_step_handler(msg, save_item_photos, item=item)
+
+
+@admin
+def save_item_photos(message: telebot.types.Message, item: Item):
+    item.photos = message.text if message.text != "skip" else None
     msg = bot.reply_to(message, "Введите цену товара")
     bot.register_next_step_handler(msg, save_item_price, item=item)
 
@@ -448,6 +455,20 @@ def update_item_photo(message: telebot.types.Message, item: Item):
         message.photo[-1].file_id
         if (message.photo and message.text != "skip")
         else item.photo
+    )
+    msg = bot.reply_to(
+        message,
+        f"Текущие фото товара: {item.photos}\nВведите новую ссылку или отправьте skip, чтобы оставить без изменений",
+    )
+    bot.register_next_step_handler(msg, update_item_photos, item=item)
+
+
+@admin
+def update_item_photos(message: telebot.types.Message, item: Item):
+    item.photos = (
+        message.text
+        if message.text != "skip"
+        else item.photos
     )
     msg = bot.reply_to(
         message,
