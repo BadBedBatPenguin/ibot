@@ -290,7 +290,7 @@ def get_equipment(message: telebot.types.Message, form: dict):
     and not models.CallBackData(from_str=call.data).admin
 )
 def fix(call: telebot.types.CallbackQuery) -> None:
-    form = {"username": {call.message.chat.username}}
+    form = {"username": call.message.chat.username}
     msg = bot.send_message(call.message.chat.id, settings.user_settings.fix_form[0])
     bot.register_next_step_handler(msg, fix_form_get_model_name, form=form)
 
