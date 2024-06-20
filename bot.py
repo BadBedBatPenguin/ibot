@@ -1,5 +1,4 @@
 import os
-from decimal import Decimal
 
 import dns.resolver
 import telebot
@@ -230,11 +229,13 @@ def buy_item(call: telebot.types.CallbackQuery) -> None:
             model=item.model,
             name=item.name,
             price=item.price,
-        )
+        ),
     )
     bot.send_message(
         call.message.chat.id,
-        settings.user_settings.buy_report.format(manager_username=settings.admin_settings.manager_username),
+        settings.user_settings.buy_report.format(
+            manager_username=settings.admin_settings.manager_username
+        ),
     )
 
 
@@ -451,9 +452,12 @@ def save_item_photos(message: telebot.types.Message, item: Item):
 
 @admin
 def save_item_price(message: telebot.types.Message, item: Item):
-    item.price = Decimal(message.text.strip().replace(",", "."))
-    items_table.save_item(item)
-    bot.send_message(message.from_user.id, settings.admin_settings.create_item_report)
+    item.price = message.text if message.text != "skip" else None
+    saved = items_table.save_item(item)
+    if saved:
+        bot.send_message(message.from_user.id, settings.admin_settings.create_item_report)
+    else:
+        bot.send_message(message.from_user.id, settings.common_settings.error_message)
 
 
 @admin
@@ -575,11 +579,7 @@ def update_item_photos(message: telebot.types.Message, item: Item):
 
 @admin
 def update_item_price(message: telebot.types.Message, item: Item):
-    item.price = (
-        Decimal(message.text.strip().replace(",", "."))
-        if message.text != "skip"
-        else item.price
-    )
+    item.price = message.text if message.text != "skip" else item.price
     items_table.edit_item(item._id, item.dict())
     bot.send_message(message.from_user.id, settings.admin_settings.update_item_report)
 

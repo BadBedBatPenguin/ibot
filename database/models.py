@@ -1,4 +1,3 @@
-from decimal import Decimal
 from uuid import uuid4
 
 
@@ -13,7 +12,7 @@ class Item:
         model: str | None = None,
         photo: str | None = None,
         photos: str | None = None,
-        price: Decimal = Decimal(0),
+        price: str | None = None,
     ):
         self._id = _id
         self.name = name
@@ -35,7 +34,7 @@ class Item:
             "model": self.model,
             "photo": self.photo,
             "photos": self.photos,
-            "price": float(self.price),
+            "price": self.price,
         }
 
     def __str__(self) -> str:

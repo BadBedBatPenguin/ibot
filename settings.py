@@ -148,6 +148,7 @@ class CommonSettings:
     back_button_text = "Назад"
     models_menu_title = "Выберите модель"
     subcategories_menu_title = "Выберите подкатегорию"
+    error_message = "Произошла ошибка"
 
     @property
     def accessory_subcategories(self) -> list[str]:
