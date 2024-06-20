@@ -65,7 +65,7 @@ def send_start_message(message: telebot.types.Message) -> None:
             settings.user_settings.sign_up_report,
         )
     else:
-        _start_menu(message.chat.id, settings.user_settings.menu_message)
+        _start_menu(message.chat.id, settings.user_settings.main_menu_title)
 
 
 @bot.callback_query_handler(
@@ -99,7 +99,7 @@ def reject_start_request(call: telebot.types.CallbackQuery) -> None:
 
 @bot.message_handler(commands=["menu"])
 def get_main_menu(message: telebot.types.Message) -> None:
-    _start_menu(message.chat.id, settings.user_settings.menu_message)
+    _start_menu(message.chat.id, settings.user_settings.main_menu_title)
 
 
 @bot.callback_query_handler(
@@ -108,7 +108,7 @@ def get_main_menu(message: telebot.types.Message) -> None:
 )
 def back_to_main_menu(call: telebot.types.CallbackQuery) -> None:
     bot.delete_message(call.message.chat.id, call.message.message_id)
-    _start_menu(call.message.chat.id, settings.user_settings.menu_message)
+    _start_menu(call.message.chat.id, settings.user_settings.main_menu_title)
 
 
 def _start_menu(chat_id: str, text: str) -> None:
@@ -155,7 +155,9 @@ def accessories_subcategories(call: telebot.types.CallbackQuery) -> None:
 )
 def iphone_models(call: telebot.types.CallbackQuery) -> None:
     markup = telebot.types.InlineKeyboardMarkup()
-    menu = models.IphonesModels(admin=False, models_to_show=items_table.not_empty_models())
+    menu = models.IphonesModels(
+        admin=False, models_to_show=items_table.not_empty_models()
+    )
     markup.add(*menu.buttons)
 
     bot.delete_message(call.message.chat.id, call.message.message_id)
@@ -221,11 +223,18 @@ def buy_item(call: telebot.types.CallbackQuery) -> None:
     item = items_table.get_item_obj_by_id(callback_data.item_id)
     bot.send_message(
         settings.admin_settings.manager_chat_id,
-        settings.user_settings.buy_message_to_manager,
+        settings.admin_settings.buy_message_to_manager.format(
+            username=call.message.chat.username,
+            category=item.category,
+            subcategory=item.subcategory,
+            model=item.model,
+            name=item.name,
+            price=item.price,
+        )
     )
     bot.send_message(
         call.message.chat.id,
-        settings.user_settings.buy_report.format(**item.dict()),
+        settings.user_settings.buy_report.format(manager_username=settings.admin_settings.manager_username),
     )
 
 

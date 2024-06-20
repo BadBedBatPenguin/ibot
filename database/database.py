@@ -331,7 +331,7 @@ class Items(DataBase):
         except Exception as error:
             print(error)
             return []
-    
+
     def not_empty_models(self) -> list[str]:
         """
         return list of models that have items

@@ -48,24 +48,21 @@ class Menu:
 
 class AdminMainMenu(Menu):
     def __init__(self) -> None:
-        self.title = "Админская панель"
+        self.title = admin_settings.main_menu_title
         self.admin = True
         self.action = "main_menu"
         self.prev_action = None
-        button1 = telebot.types.InlineKeyboardButton(
-            "Управление товарами",
-            callback_data=CallBackData(admin=True, action="categories").str(),
-        )
-        button2 = telebot.types.InlineKeyboardButton(
-            "Сделать рассылку",
-            callback_data=CallBackData(admin=True, action="send_spam").str(),
-        )
-        self.buttons = [button1, button2]
+        self.buttons = [
+            telebot.types.InlineKeyboardButton(
+                name, callback_data=CallBackData(admin=True, action=action).str()
+            )
+            for name, action in admin_settings.main_menu
+        ]
 
 
 class UserMainMenu(Menu):
     def __init__(self) -> None:
-        self.title = "Главное меню"
+        self.title = user_settings.main_menu_title
         self.admin = False
         self.action = "start"
         self.prev_action = None
@@ -80,7 +77,7 @@ class UserMainMenu(Menu):
 
 class Categories(Menu):
     def __init__(self, admin: bool) -> None:
-        self.title = "Выберите категорию"
+        self.title = common_settings.categories_menu_title
         self.action = "categories"
         self.prev_action = "main_menu" if admin else "start"
         self.buttons = [
@@ -94,7 +91,7 @@ class Categories(Menu):
         ]
         self.buttons.append(
             telebot.types.InlineKeyboardButton(
-                "Назад",
+                common_settings.back_button_text,
                 callback_data=CallBackData(admin=admin, action=self.prev_action).str(),
             )
         )
@@ -103,7 +100,7 @@ class Categories(Menu):
 
 class IphonesModels(Menu):
     def __init__(self, admin: bool, models_to_show: list[str] | str = "all") -> None:
-        self.title = "Выберите модель"
+        self.title = common_settings.models_menu_title
         self.action = "models"
         self.admin = admin
         self.prev_action = "categories"
@@ -114,11 +111,12 @@ class IphonesModels(Menu):
                     admin=admin, action="items", category="iphones", model=model
                 ).str(),
             )
-            for model in common_settings.iphone_models if models_to_show == "all" or model in models_to_show
+            for model in common_settings.iphone_models
+            if models_to_show == "all" or model in models_to_show
         ]
         self.buttons.append(
             telebot.types.InlineKeyboardButton(
-                "Назад",
+                common_settings.back_button_text,
                 callback_data=CallBackData(admin=admin, action=self.prev_action).str(),
             )
         )
@@ -128,7 +126,7 @@ class Subcategories(Menu):
     def __init__(
         self, admin: bool, category: str, subcategories_to_show: list[str] | str = "all"
     ) -> None:
-        self.title = "Выберите подкатегорию"
+        self.title = common_settings.subcategories_menu_title
         self.action = "subcategories"
         self.admin = admin
         self.prev_action = "categories"
@@ -147,7 +145,7 @@ class Subcategories(Menu):
         ]
         self.buttons.append(
             telebot.types.InlineKeyboardButton(
-                "Назад",
+                common_settings.back_button_text,
                 callback_data=CallBackData(
                     admin=admin, action=self.prev_action, category=category
                 ).str(),
@@ -173,7 +171,7 @@ class Items(Menu):
         else:
             self.prev_action = "categories"
         if admin:
-            self.title = "Редактирование товаров"
+            self.title = admin_settings.items_menu_title
             self.buttons = [
                 telebot.types.InlineKeyboardButton(
                     name,
@@ -188,7 +186,7 @@ class Items(Menu):
                 for name, action in admin_settings.items_actions
             ]
         else:
-            self.title = "Выберите товар"
+            self.title = user_settings.items_menu_title
             self.buttons = [
                 telebot.types.InlineKeyboardButton(
                     f"{item.name} {item.price}",
@@ -221,7 +219,7 @@ class ItemView(Menu):
         self.prev_action = "items"
         self.buttons = [
             telebot.types.InlineKeyboardButton(
-                "Купить",
+                user_settings.buy_button_text,
                 callback_data=CallBackData(
                     admin=self.admin,
                     action="buy",
@@ -229,7 +227,7 @@ class ItemView(Menu):
                 ).str(),
             ),
             telebot.types.InlineKeyboardButton(
-                "Назад",
+                common_settings.back_button_text,
                 callback_data=CallBackData(
                     admin=self.admin,
                     action=self.prev_action,
@@ -252,10 +250,13 @@ class DeleteItems(Menu):
         self.action = "deleteitem"
         self.admin = True
         self.prev_action = "items"
-        self.title = "Какой товар удалить?"
+        self.title = admin_settings.delete_menu_title
         self.buttons = [
             telebot.types.InlineKeyboardButton(
-                f"Name: {item.name}\nDescription: {item.description}\nPrice: {item.price}",
+                admin_settings.item_button_text.format(
+                    name=item.name,
+                    price=item.price,
+                ),
                 callback_data=CallBackData(
                     admin=self.admin,
                     action=self.action,
@@ -266,7 +267,7 @@ class DeleteItems(Menu):
         ]
         self.buttons.append(
             telebot.types.InlineKeyboardButton(
-                "Назад",
+                common_settings.back_button_text,
                 callback_data=CallBackData(
                     admin=self.admin,
                     action=self.prev_action,
@@ -289,10 +290,13 @@ class UpdateItems(Menu):
         self.action = "updateitem"
         self.admin = True
         self.prev_action = "items"
-        self.title = "Какой товар изменить?"
+        self.title = admin_settings.update_menu_title
         self.buttons = [
             telebot.types.InlineKeyboardButton(
-                f"Name: {item.name}\nDescription: {item.description}\nPrice: {item.price}",
+                admin_settings.item_button_text.format(
+                    name=item.name,
+                    price=item.price,
+                ),
                 callback_data=CallBackData(
                     admin=self.admin,
                     action=self.action,
@@ -327,7 +331,7 @@ class StartRequest(Menu):
         )
         self.buttons = [
             telebot.types.InlineKeyboardButton(
-                "Принять",
+                admin_settings.accept_button_text,
                 callback_data=CallBackData(
                     admin=self.admin,
                     action="accept_request",
@@ -335,7 +339,7 @@ class StartRequest(Menu):
                 ).str(),
             ),
             telebot.types.InlineKeyboardButton(
-                "Отклонить",
+                admin_settings.reject_button_text,
                 callback_data=CallBackData(
                     admin=self.admin,
                     action="reject_request",
