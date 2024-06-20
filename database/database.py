@@ -31,26 +31,32 @@ class Users(DataBase):
 
         self._collection = self._db["users"]
 
-    def register_user(self, message):
+    def register_user(
+            self,
+            _id: int,
+            username: str,
+            first_name: str,
+            last_name: str,
+        ):
         """
         register user in the colelction[users] in the format:
         {
-            '_id': message.from_user.id,
-            'username': message.chat.username,
-            'first_name': message.from_user.first_name,
-            'last_name': message.from_user.last_name,
+            '_id': _id,
+            'username': username,
+            'first_name': first_name,
+            'last_name': last_name,
             'is_admin': False,
         }
         """
         try:
             # if user is not registered
-            if self._collection.count_documents({"_id": message.from_user.id}) == 0:
+            if self._collection.count_documents({"_id": _id}) == 0:
                 self._collection.insert_one(
                     {
-                        "_id": message.from_user.id,
-                        "username": message.chat.username,
-                        "first_name": message.from_user.first_name,
-                        "last_name": message.from_user.last_name,
+                        "_id": _id,
+                        "username": username,
+                        "first_name": first_name,
+                        "last_name": last_name,
                         "is_admin": False,
                     }
                 )

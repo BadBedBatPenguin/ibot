@@ -14,6 +14,9 @@ class CallBackData:
         model: str | None = None,
         item_id: str | None = None,
         user_id: str | None = None,
+        username: str | None = None,
+        first_name: str | None = None,
+        last_name: str | None = None,
         from_str: str | None = None,
     ) -> None:
         if from_str:
@@ -25,6 +28,9 @@ class CallBackData:
             self.model = data[4] if data[4] else None
             self.item_id = data[5] if data[5] else None
             self.user_id = data[6] if data[6] else None
+            self.username = data[7] if data[7] else None
+            self.first_name = data[8] if data[8] else None
+            self.last_name = data[9] if data[9] else None
             return
         self.admin = admin
         self.action = action
@@ -33,9 +39,12 @@ class CallBackData:
         self.model = model if model else ""
         self.item_id = item_id if item_id else ""
         self.user_id = user_id if user_id else ""
+        self.username = username if username else ""
+        self.first_name = first_name if first_name else ""
+        self.last_name = last_name if last_name else ""
 
     def str(self) -> str:
-        return f"{self.admin}:{self.action}:{self.category}:{self.subcategory}:{self.model}:{self.item_id}:{self.user_id}"
+        return f"{self.admin}:{self.action}:{self.category}:{self.subcategory}:{self.model}:{self.item_id}:{self.user_id}:{self.username}:{self.first_name}:{self.last_name}"
 
 
 class Menu:
@@ -327,6 +336,9 @@ class StartRequest(Menu):
                     admin=self.admin,
                     action="accept_request",
                     user_id=user.id,
+                    username=user.username,
+                    first_name=user.first_name,
+                    last_name=user.last_name,
                 ).str(),
             ),
             telebot.types.InlineKeyboardButton(

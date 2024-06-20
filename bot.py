@@ -1,4 +1,3 @@
-import json
 import os
 from decimal import Decimal
 
@@ -41,7 +40,7 @@ def admin(func):
                 )
                 bot.send_message(
                     chat_id,
-                    "У вас нет прав на это действие",
+                    settings.admin_settings.not_allowed_message,
                 )
                 return
         else:
@@ -63,7 +62,7 @@ def send_start_message(message: telebot.types.Message) -> None:
         )
         bot.send_message(
             message.chat.id,
-            "Ваш запрос на встепление в группу принят.\nОжидайте подтверждения от администратора",
+            settings.user_settings.sign_up_report,
         )
     else:
         _start_menu(message.chat.id, settings.user_settings.menu_message)
@@ -75,7 +74,12 @@ def send_start_message(message: telebot.types.Message) -> None:
 )
 def accept_start_request(call: telebot.types.CallbackQuery) -> None:
     callback_data = models.CallBackData(from_str=call.data)
-    users_table.register_user(call.message)
+    users_table.register_user(
+        _id = int(callback_data.user_id),
+        username = callback_data.username,
+        first_name = callback_data.first_name,
+        last_name = callback_data.last_name,
+    )
     _start_menu(callback_data.user_id, settings.user_settings.welcome_message)
     bot.delete_message(call.message.chat.id, call.message.message_id)
 
@@ -87,7 +91,7 @@ def accept_start_request(call: telebot.types.CallbackQuery) -> None:
 def reject_start_request(call: telebot.types.CallbackQuery) -> None:
     callback_data = models.CallBackData(from_str=call.data)
     bot.send_message(
-        callback_data.user_id, "Ваш запрос на вступление в группу отклонён"
+        callback_data.user_id, settings.user_settings.sign_up_rejected
     )
     bot.delete_message(call.message.chat.id, call.message.message_id)
 
@@ -218,7 +222,7 @@ def buy_item(call: telebot.types.CallbackQuery) -> None:
     )
     bot.send_message(
         call.message.chat.id,
-        f"Ваш запрос на покупку товара принят.\nВаш товар:\n{item.name}\n{item.description}\n{item.price}",
+        settings.user_settings.buy_report.format(**item.dict()),
     )
 
 
@@ -227,40 +231,40 @@ def buy_item(call: telebot.types.CallbackQuery) -> None:
     and not models.CallBackData(from_str=call.data).admin
 )
 def buyout(call: telebot.types.CallbackQuery) -> None:
-    form = {"Пользователь": f"@{call.message.chat.username}"}
+    form = {"username": call.message.chat.username}
     msg = bot.send_message(call.message.chat.id, settings.user_settings.buyout_form[0])
     bot.register_next_step_handler(msg, get_model_name, form=form)
 
 
 def get_model_name(message: telebot.types.Message, form: dict):
-    form[settings.user_settings.buyout_form[0]] = message.text
+    form["model"] = message.text
     msg = bot.reply_to(message, settings.user_settings.buyout_form[1])
     bot.register_next_step_handler(msg, get_visual_state, form=form)
 
 
 def get_visual_state(message: telebot.types.Message, form: dict):
-    form[settings.user_settings.buyout_form[1]] = message.text
+    form["visual"] = message.text
     msg = bot.reply_to(message, settings.user_settings.buyout_form[2])
-    bot.register_next_step_handler(msg, get_technical_problems, form=form)
+    bot.register_next_step_handler(msg, get_issues, form=form)
 
 
-def get_technical_problems(message: telebot.types.Message, form: dict):
-    form[settings.user_settings.buyout_form[2]] = message.text
+def get_issues(message: telebot.types.Message, form: dict):
+    form["issues"] = message.text
     msg = bot.reply_to(message, settings.user_settings.buyout_form[3])
     bot.register_next_step_handler(msg, get_battery_state, form=form)
 
 
 def get_battery_state(message: telebot.types.Message, form: dict):
-    form[settings.user_settings.buyout_form[3]] = message.text
+    form["battery"] = message.text
     msg = bot.reply_to(message, settings.user_settings.buyout_form[4])
     bot.register_next_step_handler(msg, get_equipment, form=form)
 
 
 def get_equipment(message: telebot.types.Message, form: dict):
-    form[settings.user_settings.buyout_form[4]] = message.text
+    form["equipment"] = message.text
     bot.send_message(
         settings.admin_settings.manager_chat_id,
-        json.dumps(form, ensure_ascii=False),
+        settings.admin_settings.buyout_manager_message.format(**form),
     )
     bot.send_message(
         message.chat.id,
@@ -273,22 +277,22 @@ def get_equipment(message: telebot.types.Message, form: dict):
     and not models.CallBackData(from_str=call.data).admin
 )
 def fix(call: telebot.types.CallbackQuery) -> None:
-    form = {"Пользователь": f"@{call.message.chat.username}"}
+    form = {"username": {call.message.chat.username}}
     msg = bot.send_message(call.message.chat.id, settings.user_settings.fix_form[0])
     bot.register_next_step_handler(msg, fix_form_get_model_name, form=form)
 
 
 def fix_form_get_model_name(message: telebot.types.Message, form: dict):
-    form[settings.user_settings.fix_form[0]] = message.text
+    form["model"] = message.text
     msg = bot.reply_to(message, settings.user_settings.fix_form[1])
     bot.register_next_step_handler(msg, fix_form_get_problem, form=form)
 
 
 def fix_form_get_problem(message: telebot.types.Message, form: dict):
-    form[settings.user_settings.fix_form[1]] = message.text
+    form["issue"] = message.text
     bot.send_message(
         settings.admin_settings.manager_chat_id,
-        json.dumps(form, ensure_ascii=False),
+        settings.admin_settings.fix_manager_message.format(**form),
     )
     bot.send_message(
         message.chat.id,
@@ -396,21 +400,21 @@ def add_item(call: telebot.types.CallbackQuery) -> None:
         model=callback_data.model,
         subcategory=callback_data.subcategory,
     )
-    msg = bot.send_message(call.message.chat.id, "Введите название товара")
+    msg = bot.send_message(call.message.chat.id, settings.admin_settings.create_item_form[0])
     bot.register_next_step_handler(msg, save_item_name, item=item)
 
 
 @admin
 def save_item_name(message: telebot.types.Message, item: Item):
     item.name = message.text
-    msg = bot.reply_to(message, "Введите описание товара")
+    msg = bot.reply_to(message, settings.admin_settings.create_item_form[1])
     bot.register_next_step_handler(msg, save_item_description, item=item)
 
 
 @admin
 def save_item_description(message: telebot.types.Message, item: Item):
     item.description = message.text
-    msg = bot.reply_to(message, "Приложите заглавное фото товара")
+    msg = bot.reply_to(message, settings.admin_settings.create_item_form[2])
     bot.register_next_step_handler(msg, save_item_photo, item=item)
 
 
@@ -419,7 +423,7 @@ def save_item_photo(message: telebot.types.Message, item: Item):
     item.photo = message.photo[-1].file_id if message.photo else None
     msg = bot.reply_to(
         message,
-        "Введите ссылку на фотографии товара, или отправьте skip, если фотографий нет",
+        settings.admin_settings.create_item_form[3],
     )
     bot.register_next_step_handler(msg, save_item_photos, item=item)
 
@@ -427,7 +431,7 @@ def save_item_photo(message: telebot.types.Message, item: Item):
 @admin
 def save_item_photos(message: telebot.types.Message, item: Item):
     item.photos = message.text if message.text != "skip" else None
-    msg = bot.reply_to(message, "Введите цену товара")
+    msg = bot.reply_to(message, settings.admin_settings.create_item_form[4])
     bot.register_next_step_handler(msg, save_item_price, item=item)
 
 
@@ -435,7 +439,7 @@ def save_item_photos(message: telebot.types.Message, item: Item):
 def save_item_price(message: telebot.types.Message, item: Item):
     item.price = Decimal(message.text.strip().replace(",", "."))
     items_table.save_item(item)
-    bot.send_message(message.from_user.id, f"Спасибо, сохранён товар:\n{item.dict()}")
+    bot.send_message(message.from_user.id, settings.admin_settings.create_item_report)
 
 
 @admin
@@ -468,7 +472,7 @@ def delete_item(call: telebot.types.CallbackQuery) -> None:
     items_table.delete_item(callback_data.item_id)
 
     bot.delete_message(call.message.chat.id, call.message.message_id)
-    bot.send_message(call.message.chat.id, f"Товар с id {callback_data.item_id} удалён")
+    bot.send_message(call.message.chat.id, settings.admin_settings.delete_item_report)
 
 
 @bot.callback_query_handler(
@@ -502,7 +506,7 @@ def update_item(call: telebot.types.CallbackQuery) -> None:
 
     msg = bot.send_message(
         call.message.chat.id,
-        f"Текущее название товара: {item.name}\nВведите новое название товара или отправьте skip, чтобы оставить без изменений",
+        settings.admin_settings.update_item_form[0].format(name=item.name),
     )
     bot.register_next_step_handler(msg, update_item_name, item=item)
 
@@ -512,7 +516,7 @@ def update_item_name(message: telebot.types.Message, item: Item):
     item.name = message.text if message.text != "skip" else item.name
     msg = bot.reply_to(
         message,
-        f"Текущее описание товара: {item.description}\nВведите новое описание товара или отправьте skip, чтобы оставить без изменений",
+        settings.admin_settings.update_item_form[1].format(description=item.description),
     )
     bot.register_next_step_handler(msg, update_item_description, item=item)
 
@@ -523,7 +527,7 @@ def update_item_description(message: telebot.types.Message, item: Item):
     msg = bot.send_photo(
         message.chat.id,
         item.photo,
-        caption="Текущее фото товара.\nПриложите новое фото товара или отправьте skip, чтобы оставить без изменений",
+        caption=settings.admin_settings.update_item_form[2],
         reply_to_message_id=message.message_id,
     )
     bot.register_next_step_handler(msg, update_item_photo, item=item)
@@ -538,7 +542,7 @@ def update_item_photo(message: telebot.types.Message, item: Item):
     )
     msg = bot.reply_to(
         message,
-        f"Текущие фото товара: {item.photos}\nВведите новую ссылку или отправьте skip, чтобы оставить без изменений",
+        settings.admin_settings.update_item_form[3].format(photos=item.photos),
     )
     bot.register_next_step_handler(msg, update_item_photos, item=item)
 
@@ -548,7 +552,7 @@ def update_item_photos(message: telebot.types.Message, item: Item):
     item.photos = message.text if message.text != "skip" else item.photos
     msg = bot.reply_to(
         message,
-        f"Текущая цена товара: {item.price}\nВведите новую цену товара или отправьте skip, чтобы оставить без изменений",
+        settings.admin_settings.update_item_form[4].format(price=item.price),
     )
     bot.register_next_step_handler(msg, update_item_price, item=item)
 
@@ -562,37 +566,39 @@ def update_item_price(message: telebot.types.Message, item: Item):
     )
     items_table.edit_item(item._id, item.dict())
     bot.send_message(
-        message.from_user.id, f"Спасибо, сохранёны изменения:\n{item.dict()}"
+        message.from_user.id, settings.admin_settings.update_item_report
     )
 
 
 @bot.message_handler(commands=["make_admin"])
 @admin
 def make_admin(message: telebot.types.Message) -> None:
+    username = message.text.split()[1]
     if message.from_user.id not in settings.admin_settings.superusers:
-        bot.send_message(message.chat.id, "У вас нет прав на это действие")
+        bot.send_message(message.chat.id, settings.admin_settings.not_allowed_message)
         return
 
-    users_table.make_user_admin(message.text.split()[1])
+    users_table.make_user_admin(username)
 
     bot.send_message(
         message.chat.id,
-        f"Пользователь {message.text.split()[1]} назначен администратором",
+        settings.admin_settings.make_admin_report.format(username=username),
     )
 
 
 @bot.message_handler(commands=["unmake_admin"])
 @admin
 def unmake_admin(message: telebot.types.Message) -> None:
+    username = message.text.split()[1]
     if message.from_user.id not in settings.admin_settings.superusers:
-        bot.send_message(message.chat.id, "У вас нет прав на это действие")
+        bot.send_message(message.chat.id, settings.admin_settings.not_allowed_message)
         return
 
-    users_table.unmake_user_admin(message.text.split()[1])
+    users_table.unmake_user_admin(username)
 
     bot.send_message(
         message.chat.id,
-        f"Пользователь {message.text.split()[1]} больше не администратор",
+        username,
     )
 
 
@@ -600,7 +606,7 @@ def unmake_admin(message: telebot.types.Message) -> None:
 @admin
 def get_all_admins_usernames(message: telebot.types.Message) -> None:
     if message.from_user.id not in settings.admin_settings.superusers:
-        bot.send_message(message.chat.id, "У вас нет прав на это действие")
+        bot.send_message(message.chat.id, settings.admin_settings.not_allowed_message)
         return
 
     bot.send_message(
@@ -616,7 +622,7 @@ def get_all_admins_usernames(message: telebot.types.Message) -> None:
 @admin
 def send_spam(call: telebot.types.CallbackQuery) -> None:
     msg = bot.send_message(
-        call.message.chat.id, "Отправьте сообщение, которое хотели бы разослать"
+        call.message.chat.id, settings.admin_settings.send_spam_form[0]
     )
     bot.register_next_step_handler(msg, send_spam_message)
 
@@ -625,7 +631,7 @@ def send_spam(call: telebot.types.CallbackQuery) -> None:
 def send_spam_message(message: telebot.types.Message) -> None:
     msg = bot.send_message(
         message.chat.id,
-        "Это сообщение будет разослано всем юзерам, вы подтверждаете рассылку?",
+        settings.admin_settings.send_spam_confirmation_question,
     )
     bot.register_next_step_handler(msg, send_spam_confirmation, message.text)
 
@@ -634,10 +640,11 @@ def send_spam_message(message: telebot.types.Message) -> None:
 def send_spam_confirmation(message: telebot.types.Message, text: str) -> None:
     if message.text.lower() == "да":
         users = users_table.get_all_users_ids()
+        print(users)
         for user in users:
             bot.send_message(user, text)
 
-        bot.send_message(message.chat.id, "Рассылка завершена")
+        bot.send_message(message.chat.id, settings.admin_settings.send_spam_report)
     else:
         _admin_panel(message)
 
