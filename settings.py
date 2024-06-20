@@ -33,7 +33,7 @@ class AdminSettings:
     accept_button_text = "Принять"
     reject_button_text = "Отклонить"
     buyout_manager_message = (
-        "Заявка на выкуп:\nПользователь: @{username}\nМодель устройства: {model}\nВизуальное состояние: {visual}"
+        "Заявка на выкуп:\nПользователь: @{username}\nМодель устройства: {model}\nОпишите визуальное состояние устройства: {visual}"
         "\nЕсть ли у устройства технические проблемы: {issues}\nСостояние батареи: {battery}\nКомплектация к устройству: {equipment}"
     )
     fix_manager_message = "Заявка на ремонт:\nПользователь: @{username}\nМодель устройства: {model}\nНеисправность: {issue}"
