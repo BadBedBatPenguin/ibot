@@ -37,6 +37,6 @@ class Item:
             "photos": self.photos,
             "price": float(self.price),
         }
-    
+
     def __str__(self) -> str:
         return f"Имя: {self.name}\nОписание: {self.description}\nЦена: {self.price}\nФотографии: {self.photos}"

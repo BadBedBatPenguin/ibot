@@ -1,3 +1,4 @@
+import json
 import os
 from decimal import Decimal
 
@@ -85,7 +86,9 @@ def accept_start_request(call: telebot.types.CallbackQuery) -> None:
 )
 def reject_start_request(call: telebot.types.CallbackQuery) -> None:
     callback_data = models.CallBackData(from_str=call.data)
-    bot.send_message(callback_data.user_id, "Ваш запрос на вступление в группу отклонён")
+    bot.send_message(
+        callback_data.user_id, "Ваш запрос на вступление в группу отклонён"
+    )
     bot.delete_message(call.message.chat.id, call.message.message_id)
 
 
@@ -219,6 +222,80 @@ def buy_item(call: telebot.types.CallbackQuery) -> None:
     )
 
 
+@bot.callback_query_handler(
+    func=lambda call: models.CallBackData(from_str=call.data).action == "buyout"
+    and not models.CallBackData(from_str=call.data).admin
+)
+def buyout(call: telebot.types.CallbackQuery) -> None:
+    form = {"Пользователь": f"@{call.message.chat.username}"}
+    msg = bot.send_message(call.message.chat.id, settings.user_settings.buyout_form[0])
+    bot.register_next_step_handler(msg, get_model_name, form=form)
+
+
+def get_model_name(message: telebot.types.Message, form: dict):
+    form[settings.user_settings.buyout_form[0]] = message.text
+    msg = bot.reply_to(message, settings.user_settings.buyout_form[1])
+    bot.register_next_step_handler(msg, get_visual_state, form=form)
+
+
+def get_visual_state(message: telebot.types.Message, form: dict):
+    form[settings.user_settings.buyout_form[1]] = message.text
+    msg = bot.reply_to(message, settings.user_settings.buyout_form[2])
+    bot.register_next_step_handler(msg, get_technical_problems, form=form)
+
+
+def get_technical_problems(message: telebot.types.Message, form: dict):
+    form[settings.user_settings.buyout_form[2]] = message.text
+    msg = bot.reply_to(message, settings.user_settings.buyout_form[3])
+    bot.register_next_step_handler(msg, get_battery_state, form=form)
+
+
+def get_battery_state(message: telebot.types.Message, form: dict):
+    form[settings.user_settings.buyout_form[3]] = message.text
+    msg = bot.reply_to(message, settings.user_settings.buyout_form[4])
+    bot.register_next_step_handler(msg, get_equipment, form=form)
+
+
+def get_equipment(message: telebot.types.Message, form: dict):
+    form[settings.user_settings.buyout_form[4]] = message.text
+    bot.send_message(
+        settings.admin_settings.manager_chat_id,
+        json.dumps(form, ensure_ascii=False),
+    )
+    bot.send_message(
+        message.chat.id,
+        settings.user_settings.accept_form_report,
+    )
+
+
+@bot.callback_query_handler(
+    func=lambda call: models.CallBackData(from_str=call.data).action == "fix"
+    and not models.CallBackData(from_str=call.data).admin
+)
+def fix(call: telebot.types.CallbackQuery) -> None:
+    form = {"Пользователь": f"@{call.message.chat.username}"}
+    msg = bot.send_message(call.message.chat.id, settings.user_settings.fix_form[0])
+    bot.register_next_step_handler(msg, fix_form_get_model_name, form=form)
+
+
+def fix_form_get_model_name(message: telebot.types.Message, form: dict):
+    form[settings.user_settings.fix_form[0]] = message.text
+    msg = bot.reply_to(message, settings.user_settings.fix_form[1])
+    bot.register_next_step_handler(msg, fix_form_get_problem, form=form)
+
+
+def fix_form_get_problem(message: telebot.types.Message, form: dict):
+    form[settings.user_settings.fix_form[1]] = message.text
+    bot.send_message(
+        settings.admin_settings.manager_chat_id,
+        json.dumps(form, ensure_ascii=False),
+    )
+    bot.send_message(
+        message.chat.id,
+        settings.user_settings.accept_form_report,
+    )
+
+
 # admin panel
 @bot.message_handler(commands=["admin"])
 @admin
@@ -340,7 +417,10 @@ def save_item_description(message: telebot.types.Message, item: Item):
 @admin
 def save_item_photo(message: telebot.types.Message, item: Item):
     item.photo = message.photo[-1].file_id if message.photo else None
-    msg = bot.reply_to(message, "Введите ссылку на фотографии товара, или отправьте skip, если фотографий нет")
+    msg = bot.reply_to(
+        message,
+        "Введите ссылку на фотографии товара, или отправьте skip, если фотографий нет",
+    )
     bot.register_next_step_handler(msg, save_item_photos, item=item)
 
 
@@ -465,11 +545,7 @@ def update_item_photo(message: telebot.types.Message, item: Item):
 
 @admin
 def update_item_photos(message: telebot.types.Message, item: Item):
-    item.photos = (
-        message.text
-        if message.text != "skip"
-        else item.photos
-    )
+    item.photos = message.text if message.text != "skip" else item.photos
     msg = bot.reply_to(
         message,
         f"Текущая цена товара: {item.price}\nВведите новую цену товара или отправьте skip, чтобы оставить без изменений",

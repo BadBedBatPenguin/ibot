@@ -317,7 +317,9 @@ class StartRequest(Menu):
         self.action = "start_request"
         self.admin = True
         self.prev_action = None
-        self.title = user_settings.start_request_to_manager.format(username=user.username)
+        self.title = user_settings.start_request_to_manager.format(
+            username=user.username
+        )
         self.buttons = [
             telebot.types.InlineKeyboardButton(
                 "Принять",
