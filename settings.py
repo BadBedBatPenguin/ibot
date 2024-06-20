@@ -45,7 +45,7 @@ class AdminSettings:
     make_admin_report = "Пользователь @{username} успешно назначен администратором"
     remove_admin_report = "Пользователь @{username} успешно удалён из администраторов"
     send_spam_form = ["Отправьте сообщение, которое хотели бы разослать"]
-    send_spam_confirmation_question = "Это сообщение будет разослано всем юзерам, вы подтверждаете рассылку?"
+    send_spam_confirmation_question = 'Это сообщение будет разослано всем юзерам, вы подтверждаете рассылку?(отправьте "да" или "нет")'
     send_spam_report = "Рассылка завершена"
 
 
@@ -65,9 +65,7 @@ class UserSettings:
         ("Аксессуары", "accessories"),
     ]
     buy_message_to_manager = "Сообщение о покупке"
-    start_request_to_manager = (
-        "Пользователь @{username} хочет вступить в группу с ботом. Принять запрос?"
-    )
+    start_request_to_manager = "Пользователь @{username} ({first_name}, {last_name}) хочет вступить в группу с ботом. Принять запрос?"
     buyout_form = [
         "Модель устройства",
         "Визуальное состояние",
@@ -125,7 +123,6 @@ class CommonSettings:
         "iPhone 15 Pro",
         "iPhone 15 Pro Max",
     ]
-    # iphone_models = [(model, f"iphones:{model}") for model in iphone_models]
     default_photo = ""
     categories_without_subcategory = ["ipads", "macbooks", "apple_watch"]
 

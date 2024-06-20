@@ -74,11 +74,14 @@ def send_start_message(message: telebot.types.Message) -> None:
 )
 def accept_start_request(call: telebot.types.CallbackQuery) -> None:
     callback_data = models.CallBackData(from_str=call.data)
+    username = call.message.text.split("@")[1].split()[0]
+    first_name = call.message.text.split("(")[1].split()[0].replace(",", "")
+    last_name = call.message.text.split("(")[1].split()[1].replace(")", "")
     users_table.register_user(
-        _id = int(callback_data.user_id),
-        username = callback_data.username,
-        first_name = callback_data.first_name,
-        last_name = callback_data.last_name,
+        _id=int(callback_data.user_id),
+        username=username,
+        first_name=first_name,
+        last_name=last_name,
     )
     _start_menu(callback_data.user_id, settings.user_settings.welcome_message)
     bot.delete_message(call.message.chat.id, call.message.message_id)
@@ -90,9 +93,7 @@ def accept_start_request(call: telebot.types.CallbackQuery) -> None:
 )
 def reject_start_request(call: telebot.types.CallbackQuery) -> None:
     callback_data = models.CallBackData(from_str=call.data)
-    bot.send_message(
-        callback_data.user_id, settings.user_settings.sign_up_rejected
-    )
+    bot.send_message(callback_data.user_id, settings.user_settings.sign_up_rejected)
     bot.delete_message(call.message.chat.id, call.message.message_id)
 
 
@@ -138,7 +139,9 @@ def categories(call: telebot.types.CallbackQuery) -> None:
 def accessories_subcategories(call: telebot.types.CallbackQuery) -> None:
     markup = telebot.types.InlineKeyboardMarkup()
     menu = models.Subcategories(
-        admin=False, category=models.CallBackData(from_str=call.data).category
+        admin=False,
+        category=models.CallBackData(from_str=call.data).category,
+        subcategories_to_show=items_table.not_empty_subcategories(),
     )
     markup.add(*menu.buttons)
 
@@ -152,7 +155,7 @@ def accessories_subcategories(call: telebot.types.CallbackQuery) -> None:
 )
 def iphone_models(call: telebot.types.CallbackQuery) -> None:
     markup = telebot.types.InlineKeyboardMarkup()
-    menu = models.IphonesModels(admin=False)
+    menu = models.IphonesModels(admin=False, models_to_show=items_table.not_empty_models())
     markup.add(*menu.buttons)
 
     bot.delete_message(call.message.chat.id, call.message.message_id)
@@ -400,7 +403,9 @@ def add_item(call: telebot.types.CallbackQuery) -> None:
         model=callback_data.model,
         subcategory=callback_data.subcategory,
     )
-    msg = bot.send_message(call.message.chat.id, settings.admin_settings.create_item_form[0])
+    msg = bot.send_message(
+        call.message.chat.id, settings.admin_settings.create_item_form[0]
+    )
     bot.register_next_step_handler(msg, save_item_name, item=item)
 
 
@@ -516,7 +521,9 @@ def update_item_name(message: telebot.types.Message, item: Item):
     item.name = message.text if message.text != "skip" else item.name
     msg = bot.reply_to(
         message,
-        settings.admin_settings.update_item_form[1].format(description=item.description),
+        settings.admin_settings.update_item_form[1].format(
+            description=item.description
+        ),
     )
     bot.register_next_step_handler(msg, update_item_description, item=item)
 
@@ -565,9 +572,7 @@ def update_item_price(message: telebot.types.Message, item: Item):
         else item.price
     )
     items_table.edit_item(item._id, item.dict())
-    bot.send_message(
-        message.from_user.id, settings.admin_settings.update_item_report
-    )
+    bot.send_message(message.from_user.id, settings.admin_settings.update_item_report)
 
 
 @bot.message_handler(commands=["make_admin"])
@@ -640,7 +645,6 @@ def send_spam_message(message: telebot.types.Message) -> None:
 def send_spam_confirmation(message: telebot.types.Message, text: str) -> None:
     if message.text.lower() == "да":
         users = users_table.get_all_users_ids()
-        print(users)
         for user in users:
             bot.send_message(user, text)
 

@@ -32,12 +32,12 @@ class Users(DataBase):
         self._collection = self._db["users"]
 
     def register_user(
-            self,
-            _id: int,
-            username: str,
-            first_name: str,
-            last_name: str,
-        ):
+        self,
+        _id: int,
+        username: str,
+        first_name: str,
+        last_name: str,
+    ):
         """
         register user in the colelction[users] in the format:
         {
@@ -320,3 +320,25 @@ class Items(DataBase):
         except Exception as error:
             print(error)
             return False
+
+    def not_empty_subcategories(self) -> list[str]:
+        """
+        return list of subcategories that have items
+        """
+        try:
+            return list(self._collection.distinct("subcategory"))
+
+        except Exception as error:
+            print(error)
+            return []
+    
+    def not_empty_models(self) -> list[str]:
+        """
+        return list of models that have items
+        """
+        try:
+            return list(self._collection.distinct("model"))
+
+        except Exception as error:
+            print(error)
+            return []
