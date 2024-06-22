@@ -51,49 +51,13 @@ def admin(func):
 @bot.message_handler(commands=["start"])
 def send_start_message(message: telebot.types.Message) -> None:
     if not users_table.is_registered(message.from_user.id):
-        menu = models.StartRequest(user=message.from_user)
-        markup = telebot.types.InlineKeyboardMarkup()
-        markup.add(*menu.buttons)
-        bot.send_message(
-            settings.admin_settings.manager_chat_id,
-            menu.title,
-            reply_markup=markup,
+        users_table.register_user(
+            _id=message.from_user.id,
+            username=message.from_user.username,
+            first_name=message.from_user.first_name,
+            last_name=message.from_user.last_name,
         )
-        bot.send_message(
-            message.chat.id,
-            settings.user_settings.sign_up_report,
-        )
-    else:
-        _start_menu(message.chat.id, settings.user_settings.main_menu_title)
-
-
-@bot.callback_query_handler(
-    func=lambda call: models.CallBackData(from_str=call.data).action == "accept_request"
-    and models.CallBackData(from_str=call.data).admin
-)
-def accept_start_request(call: telebot.types.CallbackQuery) -> None:
-    callback_data = models.CallBackData(from_str=call.data)
-    username = call.message.text.split("@")[1].split()[0]
-    first_name = call.message.text.split("(")[1].split()[0].replace(",", "")
-    last_name = call.message.text.split("(")[1].split()[1].replace(")", "")
-    users_table.register_user(
-        _id=int(callback_data.user_id),
-        username=username,
-        first_name=first_name,
-        last_name=last_name,
-    )
-    _start_menu(callback_data.user_id, settings.user_settings.welcome_message)
-    bot.delete_message(call.message.chat.id, call.message.message_id)
-
-
-@bot.callback_query_handler(
-    func=lambda call: models.CallBackData(from_str=call.data).action == "reject_request"
-    and models.CallBackData(from_str=call.data).admin
-)
-def reject_start_request(call: telebot.types.CallbackQuery) -> None:
-    callback_data = models.CallBackData(from_str=call.data)
-    bot.send_message(callback_data.user_id, settings.user_settings.sign_up_rejected)
-    bot.delete_message(call.message.chat.id, call.message.message_id)
+    _start_menu(message.chat.id, settings.user_settings.main_menu_title)
 
 
 @bot.message_handler(commands=["menu"])
@@ -455,7 +419,9 @@ def save_item_price(message: telebot.types.Message, item: Item):
     item.price = message.text if message.text != "skip" else None
     saved = items_table.save_item(item)
     if saved:
-        bot.send_message(message.from_user.id, settings.admin_settings.create_item_report)
+        bot.send_message(
+            message.from_user.id, settings.admin_settings.create_item_report
+        )
     else:
         bot.send_message(message.from_user.id, settings.common_settings.error_message)
 
@@ -660,6 +626,15 @@ def send_spam_confirmation(message: telebot.types.Message, text: str) -> None:
         bot.send_message(message.chat.id, settings.admin_settings.send_spam_report)
     else:
         _admin_panel(message)
+
+
+@bot.chat_join_request_handler()
+def join_request(message: telebot.types.Message) -> None:
+    bot.approve_chat_join_request(message.chat.id, message.from_user.id)
+    bot.send_message(
+        message.from_user.id,
+        settings.user_settings.welcome_message,
+    )
 
 
 bot.polling(none_stop=True)
