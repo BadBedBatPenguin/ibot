@@ -1,0 +1,31 @@
+name: Deploy Workflow
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Set Up SSH
+        uses: webfactory/ssh-agent@v0.5.2
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Deploy Code
+        run: |
+          ssh mtses@${{ secrets.SERVER_ID }} 'cd ~/ibot \
+          && git pull \
+          && export MONGO_USERNAME=${{ secrets.MONGO_USERNAME }} \
+          && export MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }} \
+          && export TOKEN=${{ secrets.TOKEN }} \
+          && export DB_NAME=${{ secrets.DB_NAME }} \
+          && pkill "python bot.py"\
+          && . venv/bin/activate \
+          && (python bot.py > bot.log 2>&1 &)'
