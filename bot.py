@@ -74,12 +74,20 @@ def back_to_main_menu(call: telebot.types.CallbackQuery) -> None:
     _start_menu(call.message.chat.id, settings.user_settings.main_menu_title)
 
 
-def _start_menu(chat_id: str, text: str) -> None:
+def _start_menu(chat_id: str, welcome: bool) -> None:
     markup = telebot.types.InlineKeyboardMarkup()
     menu = models.UserMainMenu()
     markup.add(*menu.buttons)
 
-    bot.send_message(chat_id, text, reply_markup=markup)
+    if welcome:
+        bot.send_photo(
+            chat_id,
+            settings.user_settings.welcome_photo,
+            settings.user_settings.welcome_message,
+            reply_markup=markup,
+        )
+    else:
+        bot.send_message(chat_id, menu.title, reply_markup=markup)
 
 
 @bot.callback_query_handler(
