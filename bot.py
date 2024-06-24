@@ -644,5 +644,9 @@ def join_request(message: telebot.types.Message) -> None:
         settings.user_settings.welcome_message,
     )
 
+@bot.chat_leave_handler()
+def leave_chat(message: telebot.types.Message) -> None:
+    users_table.delete_user(message.from_user.id)
+
 
 bot.polling(none_stop=True)

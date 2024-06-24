@@ -18,7 +18,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd ~/ibot
-            git pull
+            # git pull
             export MONGO_USERNAME=${{ secrets.MONGO_USERNAME }}
             export MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }}
             export TOKEN=${{ secrets.TOKEN }}

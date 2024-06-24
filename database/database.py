@@ -181,6 +181,18 @@ class Users(DataBase):
 
         except Exception as error:
             print(error)
+    
+    def delete_user(self, user_id: int) -> bool:
+        """
+        delete user by id
+        """
+        try:
+            self._collection.delete_one({"_id": user_id})
+            return True
+
+        except Exception as error:
+            print(error)
+            return False
 
 
 class Items(DataBase):
