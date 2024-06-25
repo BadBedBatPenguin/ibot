@@ -178,12 +178,14 @@ def get_item(call: telebot.types.CallbackQuery) -> None:
             call.message.chat.id,
             item.photo,
             str(item),
+            parse_mode="HTML",
             reply_markup=markup,
         )
     else:
         bot.send_message(
             call.message.chat.id,
             str(item),
+            parse_mode="HTML",
             reply_markup=markup,
         )
 
@@ -420,7 +422,19 @@ def save_item_photo(message: telebot.types.Message, item: Item):
 
 @admin
 def save_item_photos(message: telebot.types.Message, item: Item):
-    item.photos = message.text if message.text != "skip" else None
+    if message.text == "skip":
+        item.photos = None
+    elif "text_link" in [entity.type for entity in message.entities]:
+        entity = [entity for entity in message.entities if entity.type == "text_link"][
+            0
+        ]
+        item.photos = {
+            "url": entity.url,
+            "text": message.text,
+        }
+    else:
+        item.photos["url"] = message.text
+
     msg = bot.reply_to(message, settings.admin_settings.create_item_form[4])
     bot.register_next_step_handler(msg, save_item_price, item=item)
 
@@ -539,14 +553,26 @@ def update_item_photo(message: telebot.types.Message, item: Item):
     )
     msg = bot.reply_to(
         message,
-        settings.admin_settings.update_item_form[3].format(photos=item.photos),
+        settings.admin_settings.update_item_form[3].format(photos=item.photos_str()),
+        parse_mode="HTML",
     )
     bot.register_next_step_handler(msg, update_item_photos, item=item)
 
 
 @admin
 def update_item_photos(message: telebot.types.Message, item: Item):
-    item.photos = message.text if message.text != "skip" else item.photos
+    if message.text == "skip":
+        item.photos = item.photos
+    elif "text_link" in [entity.type for entity in message.entities]:
+        entity = [entity for entity in message.entities if entity.type == "text_link"][
+            0
+        ]
+        item.photos = {
+            "url": entity.url,
+            "text": message.text,
+        }
+    else:
+        item.photos = {"url": message.text}
     msg = bot.reply_to(
         message,
         settings.admin_settings.update_item_form[4].format(price=item.price),

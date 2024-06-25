@@ -1,5 +1,7 @@
 from uuid import uuid4
 
+from settings import common_settings
+
 
 class Item:
     def __init__(
@@ -11,7 +13,7 @@ class Item:
         subcategory: str | None = None,
         model: str | None = None,
         photo: str | None = None,
-        photos: str | None = None,
+        photos: dict | None = None,
         price: str | None = None,
     ):
         self._id = _id
@@ -37,5 +39,11 @@ class Item:
             "price": self.price,
         }
 
+    def photos_str(self) -> str:
+        return f"<a href='{self.photos.get('url')}'>{self.photos.get('text', common_settings.default_hyperlink_text)}</a>"
+
     def __str__(self) -> str:
-        return f"Имя: {self.name}\nОписание: {self.description}\nЦена: {self.price}\nФотографии: {self.photos}"
+        return (
+            f"Имя: {self.name}\nОписание: {self.description}\nЦена: {self.price}\n"
+            f"Фотографии: {self.photos_str() if self.photos else 'нет'}"
+        )

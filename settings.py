@@ -73,11 +73,11 @@ class UserSettings:
         ("Ремонт 🛠️", "fix"),
     ]
     categories = [
-        ("Айфоны", "iphones"),
-        ("Айпады", "ipads"),
-        ("Макбуки", "macbooks"),
-        ("Apple watch", "apple_watch"),
-        ("Аксессуары", "accessories"),
+        ("IPhones", "iphones"),
+        ("IPads", "ipads"),
+        ("MacBooks", "macbooks"),
+        ("Apple Watch", "apple_watch"),
+        ("Accessories", "accessories"),
     ]
 
     welcome_message = (
@@ -154,6 +154,7 @@ class CommonSettings:
     models_menu_title = "Выберите модель"
     subcategories_menu_title = "Выберите подкатегорию"
     error_message = "Произошла ошибка"
+    default_hyperlink_text = "смотреть фото"
 
     @property
     def accessory_subcategories(self) -> list[str]:
