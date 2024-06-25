@@ -154,7 +154,7 @@ class CommonSettings:
     models_menu_title = "Выберите модель"
     subcategories_menu_title = "Выберите подкатегорию"
     error_message = "Произошла ошибка"
-    default_hyperlink_text = "смотреть фото"
+    default_hyperlink_text = "Смотреть фото 📸"
 
     @property
     def accessory_subcategories(self) -> list[str]:
