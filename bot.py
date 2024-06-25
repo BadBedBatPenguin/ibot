@@ -78,11 +78,14 @@ def _start_menu(chat_id: str, welcome: bool) -> None:
     markup = telebot.types.InlineKeyboardMarkup()
     menu = models.UserMainMenu()
     markup.add(*menu.buttons)
+    photo_item = items_table.get_item_obj_by_id(
+        settings.user_settings.welcome_photo_item_id
+    )
 
     if welcome:
         bot.send_photo(
             chat_id,
-            settings.user_settings.welcome_photo,
+            photo_item.photo,
             settings.user_settings.welcome_message,
             reply_markup=markup,
         )
@@ -646,11 +649,7 @@ def join_request(message: telebot.types.Message) -> None:
             first_name=message.from_user.first_name,
             last_name=message.from_user.last_name,
         )
-    _start_menu(message.chat.id, True)
-
-@bot.chat_leave_handler()
-def leave_chat(message: telebot.types.Message) -> None:
-    users_table.delete_user(message.from_user.id)
+    _start_menu(message.from_user.id, True)
 
 
 bot.polling(none_stop=True)

@@ -181,7 +181,7 @@ class Users(DataBase):
 
         except Exception as error:
             print(error)
-    
+
     def delete_user(self, user_id: int) -> bool:
         """
         delete user by id
