@@ -57,12 +57,12 @@ def send_start_message(message: telebot.types.Message) -> None:
             first_name=message.from_user.first_name,
             last_name=message.from_user.last_name,
         )
-    _start_menu(message.chat.id, settings.user_settings.main_menu_title)
+    _start_menu(message.chat.id, True)
 
 
 @bot.message_handler(commands=["menu"])
 def get_main_menu(message: telebot.types.Message) -> None:
-    _start_menu(message.chat.id, settings.user_settings.main_menu_title)
+    _start_menu(message.chat.id, False)
 
 
 @bot.callback_query_handler(
@@ -71,7 +71,7 @@ def get_main_menu(message: telebot.types.Message) -> None:
 )
 def back_to_main_menu(call: telebot.types.CallbackQuery) -> None:
     bot.delete_message(call.message.chat.id, call.message.message_id)
-    _start_menu(call.message.chat.id, settings.user_settings.main_menu_title)
+    _start_menu(call.message.chat.id, False)
 
 
 def _start_menu(chat_id: str, welcome: bool) -> None:
@@ -639,10 +639,14 @@ def send_spam_confirmation(message: telebot.types.Message, text: str) -> None:
 @bot.chat_join_request_handler()
 def join_request(message: telebot.types.Message) -> None:
     bot.approve_chat_join_request(message.chat.id, message.from_user.id)
-    bot.send_message(
-        message.from_user.id,
-        settings.user_settings.welcome_message,
-    )
+    if not users_table.is_registered(message.from_user.id):
+        users_table.register_user(
+            _id=message.from_user.id,
+            username=message.from_user.username,
+            first_name=message.from_user.first_name,
+            last_name=message.from_user.last_name,
+        )
+    _start_menu(message.chat.id, True)
 
 @bot.chat_leave_handler()
 def leave_chat(message: telebot.types.Message) -> None:
