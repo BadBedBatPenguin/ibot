@@ -1,6 +1,6 @@
 class AdminSettings:
     superusers = [629909066]
-    manager_chat_id = 629909066
+    manager_chat_id = 6967930534
     manager_username = "TechnoHub_manager"
 
     main_menu = [
