@@ -678,4 +678,10 @@ def join_request(message: telebot.types.Message) -> None:
     _start_menu(message.from_user.id, True)
 
 
+@bot.chat_member_handler()
+def left_chat(update: telebot.types.ChatMemberUpdated) -> None:
+    if update.difference.get("status", (None, None))[1] in ["kicked", "left"]:
+        users_table.delete_user(update.old_chat_member.user.id)
+
+
 bot.polling(none_stop=True)
