@@ -90,7 +90,7 @@ def _start_menu(chat_id: str, welcome: bool) -> None:
             reply_markup=markup,
         )
     else:
-        bot.send_message(chat_id, menu.title, reply_markup=markup)
+        bot.send_photo(chat_id, photo_item.photo, menu.title, markup=markup)
 
 
 @bot.callback_query_handler(

@@ -8,10 +8,10 @@ class AdminSettings:
         ("Сделать рассылку", "send_spam"),
     ]
     categories = [
-        ("Айфоны", "admin_iphones"),
-        ("Айпады", "admin_ipads"),
-        ("Макбуки", "admin_macbooks"),
-        ("Apple watch", "admin_apple_watch"),
+        ("iPhopne", "admin_iphones"),
+        ("iPad", "admin_ipads"),
+        ("MacBook", "admin_macbooks"),
+        ("Apple Watch", "admin_apple_watch"),
         ("Аксессуары", "admin_accessories"),
     ]
     admin_menu = [
@@ -73,11 +73,11 @@ class UserSettings:
         ("Ремонт 🛠️", "fix"),
     ]
     categories = [
-        ("IPhones", "iphones"),
-        ("IPads", "ipads"),
-        ("MacBooks", "macbooks"),
+        ("iPhone", "iphones"),
+        ("iPads", "ipads"),
+        ("MacBook", "macbooks"),
         ("Apple Watch", "apple_watch"),
-        ("Accessories", "accessories"),
+        ("Аксессуары", "accessories"),
     ]
 
     welcome_message = (
@@ -109,10 +109,10 @@ class UserSettings:
 
 class CommonSettings:
     categories = [
-        ("Айфоны", "models", "iphones"),
-        ("Айпады", "items", "ipads"),
-        ("Макбуки", "items", "macbooks"),
-        ("Apple watch", "items", "apple_watch"),
+        ("iPhone", "models", "iphones"),
+        ("iPad", "items", "ipads"),
+        ("MacBook", "items", "macbooks"),
+        ("Apple Watch", "items", "apple_watch"),
         ("Аксессуары", "subcategories", "accessories"),
     ]
     accessories = [
