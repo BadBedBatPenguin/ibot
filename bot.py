@@ -78,19 +78,23 @@ def _start_menu(chat_id: str, welcome: bool) -> None:
     markup = telebot.types.InlineKeyboardMarkup()
     menu = models.UserMainMenu()
     markup.add(*menu.buttons)
-    photo_item = items_table.get_item_obj_by_id(
-        settings.user_settings.welcome_photo_item_id
-    )
 
-    if welcome:
-        bot.send_photo(
+    if os.environ.get("LOCAL"):
+        bot.send_message(
             chat_id,
-            photo_item.photo,
-            settings.user_settings.welcome_message,
+            settings.user_settings.welcome_message if welcome else menu.title,
             reply_markup=markup,
         )
     else:
-        bot.send_photo(chat_id, photo_item.photo, menu.title, reply_markup=markup)
+        photo_item = items_table.get_item_obj_by_id(
+            settings.user_settings.welcome_photo_item_id
+        )
+        bot.send_photo(
+            chat_id,
+            photo_item.photo,
+            settings.user_settings.welcome_message if welcome else menu.title,
+            reply_markup=markup,
+        )
 
 
 @bot.callback_query_handler(
@@ -197,6 +201,17 @@ def get_item(call: telebot.types.CallbackQuery) -> None:
 def buy_item(call: telebot.types.CallbackQuery) -> None:
     callback_data = models.CallBackData(from_str=call.data)
     item = items_table.get_item_obj_by_id(callback_data.item_id)
+    if callback_data.accessories:
+        case, glass, charger = tuple(callback_data.accessories.split())
+        accessories = []
+        if case == "1":
+            accessories.append(settings.user_settings.case)
+        if glass == "1":
+            accessories.append(settings.user_settings.glass)
+        if charger == "1":
+            accessories.append(settings.user_settings.charger)
+    else:
+        accessories = None
     bot.send_message(
         settings.admin_settings.manager_chat_id,
         settings.admin_settings.buy_message_to_manager.format(
@@ -206,6 +221,7 @@ def buy_item(call: telebot.types.CallbackQuery) -> None:
             model=item.model,
             name=item.name,
             price=item.price,
+            accessories=", ".join(accessories) if accessories else "нет",
         ),
     )
     bot.send_message(
@@ -214,6 +230,34 @@ def buy_item(call: telebot.types.CallbackQuery) -> None:
             manager_username=settings.admin_settings.manager_username
         ),
     )
+
+
+@bot.callback_query_handler(
+    func=lambda call: models.CallBackData(from_str=call.data).action
+    == "buy_iphone_menu"
+    and not models.CallBackData(from_str=call.data).admin
+)
+def buy_iphone_menu(call: telebot.types.CallbackQuery) -> None:
+    callback_data = models.CallBackData(from_str=call.data)
+    if callback_data.accessories is None:
+        accessories = {
+            "case": False,
+            "glass": False,
+            "charger": False,
+        }
+    else:
+        accessories_str: list[str] = callback_data.accessories.split()
+        accessories = {
+            "case": accessories_str[0] == "1",
+            "glass": accessories_str[1] == "1",
+            "charger": accessories_str[2] == "1",
+        }
+    markup = telebot.types.InlineKeyboardMarkup()
+    menu = models.BuyIphone(callback_data.item_id, **accessories)
+    markup.add(*menu.buttons)
+
+    bot.delete_message(call.message.chat.id, call.message.message_id)
+    bot.send_message(call.message.chat.id, menu.title, reply_markup=markup)
 
 
 @bot.callback_query_handler(

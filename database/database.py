@@ -1,3 +1,5 @@
+import os
+
 from pymongo import MongoClient
 
 from database.models import Item
@@ -29,7 +31,9 @@ class Users(DataBase):
     def __init__(self, connection_string, db_name):
         super().__init__(connection_string, db_name)
 
-        self._collection = self._db["users"]
+        self._collection = (
+            self._db["users-dev"] if os.environ.get("LOCAL") else self._db["users"]
+        )
 
     def register_user(
         self,
@@ -199,7 +203,9 @@ class Items(DataBase):
     def __init__(self, connection_string, db_name):
         super().__init__(connection_string, db_name)
 
-        self._collection = self._db["items"]
+        self._collection = (
+            self._db["items-dev"] if os.environ.get("LOCAL") else self._db["items"]
+        )
 
     def save_item(self, item: Item) -> bool:
         """

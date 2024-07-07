@@ -1,19 +1,18 @@
+import os
+
+
 class AdminSettings:
     superusers = [629909066]
-    manager_chat_id = 6967930534
-    manager_username = "TechnoHub_manager"
+    manager_chat_id = 629909066 if os.environ.get("LOCAL") else 6967930534
+    manager_username = (
+        "Badbedbatpenguin" if os.environ.get("LOCAL") else "TechnoHub_manager"
+    )
 
     main_menu = [
         ("Управление товарами", "categories"),
         ("Сделать рассылку", "send_spam"),
     ]
-    categories = [
-        ("iPhopne", "admin_iphones"),
-        ("iPad", "admin_ipads"),
-        ("MacBook", "admin_macbooks"),
-        ("Apple Watch", "admin_apple_watch"),
-        ("Аксессуары", "admin_accessories"),
-    ]
+
     admin_menu = [
         ("Добавить товар", "add_{category}_{model}_{subcategory}"),
         ("Удалить товар", "deleteitems_{category}_{model}_{subcategory}"),
@@ -62,7 +61,7 @@ class AdminSettings:
     send_spam_report = "Рассылка завершена"
     buy_message_to_manager = (
         "Заявка на покупку:\nПользователь: @{username}\nКатегория: {category}\nПодкатегория: {subcategory}"
-        "\nМодель: {model}\nНазвание: {name}\nЦена: {price}"
+        "\nМодель: {model}\nНазвание: {name}\nЦена: {price}\nДополнительные аксессуары: {accessories}"
     )
 
 
@@ -72,14 +71,6 @@ class UserSettings:
         ("Выкуп ♻️", "buyout"),
         ("Ремонт 🛠️", "fix"),
     ]
-    categories = [
-        ("iPhone", "iphones"),
-        ("iPads", "ipads"),
-        ("MacBook", "macbooks"),
-        ("Apple Watch", "apple_watch"),
-        ("Аксессуары", "accessories"),
-    ]
-
     welcome_message = (
         "Добро пожаловать в TehnoHub !\n\n"
         "Телеграм-бот, в котором Вы сможете решить любой вопрос касающийся техники Apple\n\n"
@@ -105,16 +96,33 @@ class UserSettings:
     buy_report = "Ваш запрос на покупку товара принят.\nС вами свяжется менеджер для уточнения деталей @{manager_username}"
     sign_up_report = "Ваш запрос на вступление в группу принят.\nОжидайте подтверждения от администратора"
     sign_up_rejected = "Ваш запрос на вступление в группу отклонён"
+    buy_iphone_menu_title = (
+        "Вежливое предложение( текст напишу позже ) добрать аксессуары"
+    )
+    case = "Чехол"
+    glass = "Стекло"
+    charger = "Блок питания"
+    add_accessories_buttons_names = {
+        "case": "Чехол",
+        "glass": "Стекло",
+        "charger": "Блок питания",
+    }
+    add_accessories_buttons = {
+        "unchecked": {
+            "case": f"⬜️{add_accessories_buttons_names['case']}",
+            "glass": f"⬜️{add_accessories_buttons_names['glass']}",
+            "charger": f"⬜️{add_accessories_buttons_names['charger']}",
+        },
+        "checked": {
+            "case": f"✅{add_accessories_buttons_names['case']}",
+            "glass": f"✅{add_accessories_buttons_names['glass']}",
+            "charger": f"✅{add_accessories_buttons_names['charger']}",
+        },
+    }
+    buy_iphone_accept_button_name = "Подтвердить"
 
 
 class CommonSettings:
-    categories = [
-        ("iPhone", "models", "iphones"),
-        ("iPad", "items", "ipads"),
-        ("MacBook", "items", "macbooks"),
-        ("Apple Watch", "items", "apple_watch"),
-        ("Аксессуары", "subcategories", "accessories"),
-    ]
     accessories = [
         ("Зарядки", "chargers"),
         ("Чехлы", "cases"),
@@ -161,6 +169,22 @@ class CommonSettings:
         return [f"accessories:{subcategory}" for _, subcategory in self.accessories]
 
 
+class CategoriesSettings:
+    iphone_category_name = "iPhone"
+    ipad_category_name = "iPad"
+    macbook_category_name = "MacBook"
+    apple_watch_category_name = "Apple Watch"
+    accessories_category_name = "Аксессуары"
+    categories = [
+        (iphone_category_name, "models", "iphones"),
+        (ipad_category_name, "items", "ipads"),
+        (macbook_category_name, "items", "macbooks"),
+        (apple_watch_category_name, "items", "apple_watch"),
+        (accessories_category_name, "subcategories", "accessories"),
+    ]
+
+
 admin_settings = AdminSettings()
 user_settings = UserSettings()
 common_settings = CommonSettings()
+categories_settings = CategoriesSettings()

@@ -1,7 +1,8 @@
 import telebot
 
 from database.models import Item
-from settings import admin_settings, common_settings, user_settings
+from settings import (admin_settings, categories_settings, common_settings,
+                      user_settings)
 
 
 class CallBackData:
@@ -15,16 +16,18 @@ class CallBackData:
         item_id: str | None = None,
         user_id: str | None = None,
         from_str: str | None = None,
+        accessories: str | None = None,
     ) -> None:
         if from_str:
             data = from_str.split(":")
-            self.admin = data[0] == "True"
+            self.admin = data[0] == "1"
             self.action = data[1]
             self.category = data[2] if data[2] else None
             self.subcategory = data[3] if data[3] else None
             self.model = data[4] if data[4] else None
             self.item_id = data[5] if data[5] else None
             self.user_id = data[6] if data[6] else None
+            self.accessories = data[7] if data[7] else None
             return
         self.admin = admin
         self.action = action
@@ -33,9 +36,10 @@ class CallBackData:
         self.model = model if model else ""
         self.item_id = item_id if item_id else ""
         self.user_id = user_id if user_id else ""
+        self.accessories = accessories if accessories else ""
 
     def str(self) -> str:
-        return f"{self.admin}:{self.action}:{self.category}:{self.subcategory}:{self.model}:{self.item_id}:{self.user_id}"
+        return f"{'1' if self.admin else '0'}:{self.action}:{self.category}:{self.subcategory}:{self.model}:{self.item_id}:{self.user_id}:{self.accessories}"
 
 
 class Menu:
@@ -87,7 +91,7 @@ class Categories(Menu):
                     admin=admin, action=action, category=category
                 ).str(),
             )
-            for name, action, category in common_settings.categories
+            for name, action, category in categories_settings.categories
         ]
         self.buttons.append(
             telebot.types.InlineKeyboardButton(
@@ -222,7 +226,7 @@ class ItemView(Menu):
                 user_settings.buy_button_text,
                 callback_data=CallBackData(
                     admin=self.admin,
-                    action="buy",
+                    action="buy" if item.category != "iphones" else "buy_iphone_menu",
                     item_id=item._id,
                 ).str(),
             ),
@@ -234,6 +238,75 @@ class ItemView(Menu):
                     category=item.category,
                     subcategory=item.subcategory,
                     model=item.model,
+                ).str(),
+            ),
+        ]
+
+
+class BuyIphone(Menu):
+    def __init__(
+        self,
+        item_id: str,
+        case: bool = False,
+        glass: bool = False,
+        charger: bool = False,
+    ) -> None:
+        self.action = "buy_iphone_menu"
+        self.admin = False
+        self.prev_action = "item_info"
+        self.title = user_settings.buy_iphone_menu_title
+        case_str = "1" if case else "0"
+        glass_str = "1" if glass else "0"
+        charger_str = "1" if charger else "0"
+        not_case_str = "1" if not case else "0"
+        not_glass_str = "1" if not glass else "0"
+        not_charger_str = "1" if not charger else "0"
+        self.buttons = [
+            telebot.types.InlineKeyboardButton(
+                user_settings.add_accessories_buttons[
+                    "checked" if case else "unchecked"
+                ]["case"],
+                callback_data=CallBackData(
+                    action=self.action,
+                    item_id=item_id,
+                    accessories=f"{not_case_str} {glass_str} {charger_str}",
+                ).str(),
+            ),
+            telebot.types.InlineKeyboardButton(
+                user_settings.add_accessories_buttons[
+                    "checked" if glass else "unchecked"
+                ]["glass"],
+                callback_data=CallBackData(
+                    action=self.action,
+                    item_id=item_id,
+                    accessories=f"{case_str} {not_glass_str} {charger_str}",
+                ).str(),
+            ),
+            telebot.types.InlineKeyboardButton(
+                user_settings.add_accessories_buttons[
+                    "checked" if charger else "unchecked"
+                ]["charger"],
+                callback_data=CallBackData(
+                    action=self.action,
+                    item_id=item_id,
+                    accessories=f"{case_str} {glass_str} {not_charger_str}",
+                ).str(),
+            ),
+            telebot.types.InlineKeyboardButton(
+                user_settings.buy_iphone_accept_button_name,
+                callback_data=CallBackData(
+                    admin=self.admin,
+                    action="buy",
+                    item_id=item_id,
+                    accessories=f"{case_str} {glass_str} {charger_str}",
+                ).str(),
+            ),
+            telebot.types.InlineKeyboardButton(
+                common_settings.back_button_text,
+                callback_data=CallBackData(
+                    admin=self.admin,
+                    action=self.prev_action,
+                    item_id=item_id,
                 ).str(),
             ),
         ]
