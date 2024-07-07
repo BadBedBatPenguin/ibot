@@ -477,7 +477,7 @@ def save_item_photos(message: telebot.types.Message, item: Item):
             "text": message.text,
         }
     else:
-        item.photos["url"] = message.text
+        item.photos = {"url": message.text}
 
     msg = bot.reply_to(message, settings.admin_settings.create_item_form[4])
     bot.register_next_step_handler(msg, save_item_price, item=item)
