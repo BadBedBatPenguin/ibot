@@ -224,6 +224,7 @@ def buy_item(call: telebot.types.CallbackQuery) -> None:
             accessories=", ".join(accessories) if accessories else "нет",
         ),
     )
+    bot.delete_message(call.message.chat.id, call.message.message_id)
     bot.send_message(
         call.message.chat.id,
         settings.user_settings.buy_report.format(
