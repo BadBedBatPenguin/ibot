@@ -45,7 +45,8 @@ class Item:
         return f"<a href='{self.photos.get('url')}'>{self.photos.get('text', common_settings.default_hyperlink_text)}</a>"
 
     def __str__(self) -> str:
+        photos = f"\nФотографии: {self.photos_str()}" if self.photos else ""
         return (
-            f"Имя: {self.name}\nОписание: {self.description}\nЦена: {self.price}\n"
-            f"Фотографии: {self.photos_str() if self.photos else 'нет'}"
+            f"Имя: {self.name}\nОписание: {self.description}\nЦена: {self.price}"
+            + photos
         )
