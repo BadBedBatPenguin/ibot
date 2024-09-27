@@ -40,6 +40,8 @@ class Item:
         }
 
     def photos_str(self) -> str:
+        if not self.photos:
+            return "нет"
         return f"<a href='{self.photos.get('url')}'>{self.photos.get('text', common_settings.default_hyperlink_text)}</a>"
 
     def __str__(self) -> str:
