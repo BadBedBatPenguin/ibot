@@ -6,7 +6,7 @@ from settings import common_settings
 class Item:
     def __init__(
         self,
-        _id: str = str(uuid4()),
+        _id: str | None = None,
         name: str | None = None,
         description: str | None = None,
         category: str | None = None,
@@ -16,7 +16,7 @@ class Item:
         photos: dict | None = None,
         price: str | None = None,
     ):
-        self._id = _id
+        self._id = _id if _id else str(uuid4())
         self.name = name
         self.description = description
         self.category = category
