@@ -152,6 +152,7 @@ class CommonSettings:
         "iPhone 15 Plus",
         "iPhone 15 Pro",
         "iPhone 15 Pro Max",
+        "Прочее",
     ]
     default_photo = ""
     categories_without_subcategory = ["ipads", "macbooks", "apple_watch"]

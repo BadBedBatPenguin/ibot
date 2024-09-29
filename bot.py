@@ -22,14 +22,18 @@ items_table = Items(
 )
 
 
+def is_admin(user_id: int) -> bool:
+    return (
+        user_id in settings.admin_settings.superusers
+        or users_table.check_admin_status_for_user(user_id)
+    )
+
+
 def admin(func):
     def wrapper(*args, **kwargs):
         if args:
             payload = args[0]
-            if payload and (
-                payload.from_user.id in settings.admin_settings.superusers
-                or users_table.check_admin_status_for_user(payload.from_user.id)
-            ):
+            if payload and is_admin(payload.from_user.id):
                 return func(*args, **kwargs)
             elif payload:
                 chat_id = (
@@ -57,6 +61,17 @@ def send_start_message(message: telebot.types.Message) -> None:
             first_name=message.from_user.first_name,
             last_name=message.from_user.last_name,
         )
+    commands = [
+        telebot.types.BotCommand("menu", settings.user_settings.main_menu_title)
+    ]
+    if is_admin(message.from_user.id):
+        commands.append(
+            telebot.types.BotCommand("admin", settings.admin_settings.main_menu_title)
+        )
+    bot.set_my_commands(commands)
+    bot.set_chat_menu_button(
+        message.chat.id, telebot.types.MenuButtonCommands("commands")
+    )
     _start_menu(message.chat.id, True)
 
 
@@ -115,7 +130,7 @@ def categories(call: telebot.types.CallbackQuery) -> None:
     and not models.CallBackData(from_str=call.data).admin
 )
 def accessories_subcategories(call: telebot.types.CallbackQuery) -> None:
-    markup = telebot.types.InlineKeyboardMarkup()
+    markup = telebot.types.InlineKeyboardMarkup(row_width=2)
     menu = models.Subcategories(
         admin=False,
         category=models.CallBackData(from_str=call.data).category,
@@ -132,7 +147,7 @@ def accessories_subcategories(call: telebot.types.CallbackQuery) -> None:
     and not models.CallBackData(from_str=call.data).admin
 )
 def iphone_models(call: telebot.types.CallbackQuery) -> None:
-    markup = telebot.types.InlineKeyboardMarkup()
+    markup = telebot.types.InlineKeyboardMarkup(row_width=2)
     menu = models.IphonesModels(
         admin=False, models_to_show=items_table.not_empty_models()
     )
@@ -380,7 +395,7 @@ def back_to_admin_panel(call: telebot.types.CallbackQuery) -> None:
 )
 @admin
 def admin_iphone_models(call: telebot.types.CallbackQuery) -> None:
-    markup = telebot.types.InlineKeyboardMarkup()
+    markup = telebot.types.InlineKeyboardMarkup(row_width=2)
     menu = models.IphonesModels(admin=True)
     markup.add(*menu.buttons)
 
