@@ -231,6 +231,8 @@ def buy_item(call: telebot.types.CallbackQuery) -> None:
         settings.admin_settings.manager_chat_id,
         settings.admin_settings.buy_message_to_manager.format(
             username=call.message.chat.username,
+            first_name=call.message.chat.first_name,
+            last_name=call.message.chat.last_name,
             category=item.category,
             subcategory=item.subcategory,
             model=item.model,
@@ -281,7 +283,11 @@ def buy_iphone_menu(call: telebot.types.CallbackQuery) -> None:
     and not models.CallBackData(from_str=call.data).admin
 )
 def buyout(call: telebot.types.CallbackQuery) -> None:
-    form = {"username": call.message.chat.username}
+    form = {
+        "username": call.message.chat.username,
+        "first_name": call.message.chat.first_name,
+        "last_name": call.message.chat.last_name,
+    }
     msg = bot.send_message(call.message.chat.id, settings.user_settings.buyout_form[0])
     bot.register_next_step_handler(msg, get_model_name, form=form)
 
@@ -327,7 +333,11 @@ def get_equipment(message: telebot.types.Message, form: dict):
     and not models.CallBackData(from_str=call.data).admin
 )
 def fix(call: telebot.types.CallbackQuery) -> None:
-    form = {"username": call.message.chat.username}
+    form = {
+        "username": call.message.chat.username,
+        "first_name": call.message.chat.first_name,
+        "last_name": call.message.chat.last_name,
+    }
     msg = bot.send_message(call.message.chat.id, settings.user_settings.fix_form[0])
     bot.register_next_step_handler(msg, fix_form_get_model_name, form=form)
 

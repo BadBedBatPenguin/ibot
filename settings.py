@@ -32,10 +32,14 @@ class AdminSettings:
     accept_button_text = "Принять"
     reject_button_text = "Отклонить"
     buyout_manager_message = (
-        "Заявка на выкуп:\nПользователь: @{username}\nМодель устройства: {model}\nОпишите визуальное состояние устройства: {visual}"
+        "Заявка на выкуп:\nПользователь:\n - username: @{username}\n - имя: {first_name}\n - фамилия: {last_name}\n"
+        "Модель устройства: {model}\nОпишите визуальное состояние устройства: {visual}"
         "\nЕсть ли у устройства технические проблемы: {issues}\nСостояние батареи: {battery}\nКомплектация к устройству: {equipment}"
     )
-    fix_manager_message = "Заявка на ремонт:\nПользователь: @{username}\nМодель устройства: {model}\nНеисправность: {issue}"
+    fix_manager_message = (
+        "Заявка на ремонт:\nПользователь:\n - username: @{username}\n - имя: {first_name}\n - фамилия: {last_name}"
+        "\nМодель устройства: {model}\nНеисправность: {issue}"
+    )
     not_allowed_message = "У вас нет прав на это действие"
     create_item_form = [
         "Введите название товара",
@@ -60,7 +64,7 @@ class AdminSettings:
     send_spam_confirmation_question = 'Это сообщение будет разослано всем юзерам, вы подтверждаете рассылку?(отправьте "да" или "нет")'
     send_spam_report = "Рассылка завершена"
     buy_message_to_manager = (
-        "Заявка на покупку:\nПользователь: @{username}\nКатегория: {category}\nПодкатегория: {subcategory}"
+        "Заявка на покупку:\nПользователь: @{username}({first_name}, {last_name})\nКатегория: {category}\nПодкатегория: {subcategory}"
         "\nМодель: {model}\nНазвание: {name}\nЦена: {price}\nДополнительные аксессуары: {accessories}"
     )
 
